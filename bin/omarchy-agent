@@ -1,0 +1,61 @@
+#!/bin/bash
+
+# omarchy:summary=Launch the default coding agent in a terminal
+# omarchy:args=[--inline] [--pick]
+
+inline=false
+pick=false
+prompt=""
+args=()
+
+while (($#)); do
+  case "$1" in
+    --inline)
+      inline=true
+      args+=("$1")
+      shift
+      ;;
+    --pick)
+      pick=true
+      args+=("$1")
+      shift
+      ;;
+    --prompt)
+      prompt=${2:?--prompt needs a value}
+      args+=("$1" "$2")
+      shift 2
+      ;;
+    *)
+      args+=("$1")
+      shift
+      ;;
+  esac
+done
+
+agent=$(omarchy-default-agent)
+
+if [[ -z $agent ]]; then
+  [[ $pick == "true" ]] && exec omarchy-menu summon setup.default.agent
+  echo "Choose default agent with: omarchy default agent <name>" >&2
+  exit 1
+fi
+
+if [[ "$agent" == "antigravity" || "$agent" == "agy" ]]; then
+  [[ $PWD == "$HOME" && -d $HOME/Work ]] && cd "$HOME/Work"
+
+  if omarchy-cmd-missing "agy" && omarchy-cmd-missing "antigravity"; then
+    echo "Antigravity is not installed. Choose an installed agent with: omarchy default agent <name>" >&2
+    exit 1
+  fi
+
+  command=(agy --dangerously-skip-permissions)
+  [[ -n ${prompt:-} ]] && command+=(--prompt-interactive "$prompt")
+
+  if [[ $inline == "true" ]]; then
+    exec "${command[@]}"
+  else
+    exec omarchy-launch-tui --app-id=org.omarchy.agent "${command[@]}"
+  fi
+else
+  exec /usr/share/omarchy/bin/omarchy-agent "${args[@]}"
+fi

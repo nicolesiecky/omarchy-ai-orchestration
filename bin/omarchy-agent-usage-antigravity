@@ -1,0 +1,356 @@
+#!/usr/bin/env python3
+# omarchy:summary=Print the Antigravity usage record as JSON
+# omarchy:args=[--force] [--limits-only]
+# omarchy:hidden=true
+"""Collect Antigravity usage into one display-ready JSON record.
+
+Local stats come from ~/.gemini/antigravity-cli/ transcripts and history.
+Rate limits and quotas come from authoritative CLI queries (`agy -p "/usage"`).
+"""
+
+from __future__ import annotations
+
+import argparse
+import glob
+import json
+import os
+import re
+import subprocess
+import time
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+from typing import Any
+
+AGENT_ID = "antigravity"
+AGENT_NAME = "Antigravity"
+CACHE_DIR = Path.home() / ".cache" / "omarchy" / "agent-usage"
+LIMITS_CACHE = CACHE_DIR / "antigravity-limits.json"
+STATS_CACHE = CACHE_DIR / "antigravity-stats.json"
+
+MODEL_CHANGE_RE = re.compile(r"Model Selection` from (?:.*?) to (.*?)\.\s*No need to", re.DOTALL)
+
+
+def get_active_model() -> str:
+    """Detect current active model from settings.json or agy CLI."""
+    settings_file = Path.home() / ".gemini" / "antigravity-cli" / "settings.json"
+    if settings_file.exists():
+        try:
+            with open(settings_file, "r", encoding="utf-8") as f:
+                s = json.load(f)
+                m = s.get("model")
+                if m:
+                    return str(m)
+        except Exception:
+            pass
+
+    try:
+        res = subprocess.run(
+            ["agy", "-p", "/model", "--output-format", "json"],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            cmd_data = data.get("command", {}).get("data", {})
+            label = cmd_data.get("label")
+            if label:
+                return str(label)
+    except Exception:
+        pass
+
+    return "Gemini 3.8 Flash (High)"
+
+
+def fetch_limits(force: bool = False, max_age_seconds: float = 60.0) -> dict[str, Any]:
+    """Fetch live rate limits and quota buckets from Antigravity."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if not force and LIMITS_CACHE.exists():
+        try:
+            with open(LIMITS_CACHE, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+                if time.time() - cached.get("fetchedAt", 0) < max_age_seconds:
+                    return cached.get("data", {})
+        except Exception:
+            pass
+
+    try:
+        res = subprocess.run(
+            ["agy", "-p", "/usage", "--output-format", "json"],
+            capture_output=True,
+            text=True,
+            timeout=6
+        )
+        if res.returncode == 0:
+            data = json.loads(res.stdout)
+            usage_data = data.get("command", {}).get("data", {})
+            try:
+                with open(LIMITS_CACHE, "w", encoding="utf-8") as f:
+                    json.dump({"fetchedAt": time.time(), "data": usage_data}, f)
+            except Exception:
+                pass
+            return usage_data
+    except Exception:
+        pass
+
+    if LIMITS_CACHE.exists():
+        try:
+            with open(LIMITS_CACHE, "r", encoding="utf-8") as f:
+                return json.load(f).get("data", {})
+        except Exception:
+            pass
+
+    return {}
+
+
+def scan_transcripts(force: bool = False, max_age_seconds: float = 30.0) -> dict[str, Any]:
+    """Scan transcripts and history for accurate token and prompt counts."""
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    if not force and STATS_CACHE.exists():
+        try:
+            with open(STATS_CACHE, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+                if time.time() - cached.get("scannedAt", 0) < max_age_seconds:
+                    return cached.get("stats", {})
+        except Exception:
+            pass
+
+    home = Path.home()
+    gemini_dir = home / ".gemini" / "antigravity-cli"
+    brain_dir = gemini_dir / "brain"
+    history_file = gemini_dir / "history.jsonl"
+
+    today_str = datetime.now().strftime("%Y-%m-%d")
+    recent_dates = [
+        (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        for i in range(6, -1, -1)
+    ]
+    daily_tokens = {d: 0 for d in recent_dates}
+    active_dates: set[str] = set()
+
+    model_usage: dict[str, dict[str, int]] = {}
+    today_tokens_by_model: dict[str, int] = {}
+    sessions: set[str] = set()
+    today_sessions: set[str] = set()
+
+    # Discover sessions from brain directory
+    if brain_dir.exists():
+        for p in glob.glob(str(brain_dir / "*")):
+            if os.path.isdir(p):
+                sessions.add(os.path.basename(p))
+
+    # Scan transcripts for token usage attributed to active models
+    transcript_paths = glob.glob(
+        str(brain_dir / "*" / ".system_generated" / "logs" / "transcript.jsonl")
+    )
+    for path in transcript_paths:
+        cid = Path(path).parents[2].name
+        current_model = "Gemini 3.8 Flash (High)"
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        record = json.loads(line)
+                    except Exception:
+                        continue
+
+                    content = record.get("content", "")
+                    if isinstance(content, str) and "Model Selection" in content:
+                        m = MODEL_CHANGE_RE.search(content)
+                        if m:
+                            current_model = m.group(1).strip()
+
+                    inp = int(record.get("input_tokens") or 0)
+                    out = int(record.get("output_tokens") or 0)
+                    cache = int(record.get("cache_read_tokens") or 0)
+                    tot = inp + out + cache
+                    if tot <= 0:
+                        continue
+
+                    created_at = record.get("created_at")
+                    day = today_str
+                    if created_at:
+                        try:
+                            dt = datetime.fromisoformat(
+                                created_at.replace("Z", "+00:00")
+                            ).astimezone()
+                            day = dt.strftime("%Y-%m-%d")
+                        except Exception:
+                            pass
+
+                    active_dates.add(day)
+                    if day in daily_tokens:
+                        daily_tokens[day] += tot
+
+                    if current_model not in model_usage:
+                        model_usage[current_model] = {
+                            "inputTokens": 0,
+                            "outputTokens": 0,
+                            "cacheReadInputTokens": 0,
+                            "cacheCreationInputTokens": 0,
+                        }
+                    model_usage[current_model]["inputTokens"] += inp
+                    model_usage[current_model]["outputTokens"] += out
+                    model_usage[current_model]["cacheReadInputTokens"] += cache
+
+                    if day == today_str:
+                        today_tokens_by_model[current_model] = (
+                            today_tokens_by_model.get(current_model, 0) + tot
+                        )
+                        today_sessions.add(cid)
+        except Exception:
+            continue
+
+    # Scan history for prompt counts
+    total_prompts = 0
+    today_prompts = 0
+
+    if history_file.exists():
+        try:
+            with open(history_file, "r", encoding="utf-8", errors="replace") as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        rec = json.loads(line)
+                        ts = rec.get("timestamp", 0) / 1000.0
+                        dt = datetime.fromtimestamp(ts)
+                        date_str = dt.strftime("%Y-%m-%d")
+                        active_dates.add(date_str)
+                        total_prompts += 1
+                        conv_id = rec.get("conversationId")
+                        if conv_id:
+                            sessions.add(conv_id)
+                        if date_str == today_str:
+                            today_prompts += 1
+                            if conv_id:
+                                today_sessions.add(conv_id)
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+    recent_days = [
+        {"date": d, "messageCount": daily_tokens.get(d, 0)}
+        for d in recent_dates
+    ]
+    today_total_tokens = sum(today_tokens_by_model.values())
+
+    stats = {
+        "todayPrompts": max(today_prompts, 1),
+        "todaySessions": max(len(today_sessions), 1),
+        "todayTotalTokens": today_total_tokens,
+        "todayTokensByModel": today_tokens_by_model,
+        "recentDays": recent_days,
+        "totalPrompts": max(total_prompts, 1),
+        "totalSessions": max(len(sessions), 1),
+        "activeDays": max(len(active_dates), 1),
+        "activeDates": sorted(list(active_dates)) if active_dates else [today_str],
+        "modelUsage": model_usage,
+    }
+
+    try:
+        with open(STATS_CACHE, "w", encoding="utf-8") as f:
+            json.dump({"scannedAt": time.time(), "stats": stats}, f)
+    except Exception:
+        pass
+
+    return stats
+
+
+def build_record(force: bool = False, limits_only: bool = False) -> dict[str, Any]:
+    active_model = get_active_model()
+    usage_info = fetch_limits(force=force, max_age_seconds=15.0 if limits_only else 60.0)
+    stats = scan_transcripts(
+        force=(force and not limits_only),
+        max_age_seconds=15.0 if force else 30.0
+    )
+
+    # Determine which quota group applies to active model
+    model_lower = active_model.lower()
+    if "argon" in model_lower:
+        target_group = "argon"
+    elif "claude" in model_lower or "gpt" in model_lower:
+        target_group = "3p"
+    else:
+        target_group = "gemini"
+
+    limits = []
+    groups = usage_info.get("groups", [])
+    for grp in groups:
+        grp_name = grp.get("name", "").lower()
+        is_active_group = False
+        if target_group == "argon" and "argon" in grp_name:
+            is_active_group = True
+        elif target_group == "3p" and ("claude" in grp_name or "gpt" in grp_name):
+            is_active_group = True
+        elif target_group == "gemini" and "gemini models" in grp_name:
+            is_active_group = True
+
+        if not is_active_group:
+            continue
+
+        for bucket in grp.get("buckets", []):
+            if bucket.get("disabled"):
+                continue
+            rem = bucket.get("remaining_fraction", 1.0)
+            try:
+                rem_val = float(rem)
+            except Exception:
+                rem_val = 1.0
+            used_pct = round(max(0.0, min(1.0, 1.0 - rem_val)), 4)
+            window = bucket.get("window", "")
+            reset_time = bucket.get("reset_time", "")
+
+            if window == "5h":
+                title = "Session"
+                label = "Session (5-hour)"
+            elif window == "weekly":
+                title = "Weekly"
+                label = f"{grp.get('name', '')} Weekly"
+            else:
+                title = bucket.get("name", "Limit")
+                label = title
+
+            limits.append({
+                "label": label,
+                "title": title,
+                "percent": used_pct,
+                "resetsAt": reset_time,
+            })
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+
+    record: dict[str, Any] = {
+        "schemaVersion": 1,
+        "id": AGENT_ID,
+        "name": AGENT_NAME,
+        "updatedAt": now_iso,
+        "ready": True,
+        "hasLocalStats": True,
+        "limits": limits,
+        "tierLabel": active_model,
+        "usageStatusText": "",
+        "authHelpText": "",
+    }
+    record.update(stats)
+    return record
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--force", action="store_true")
+    parser.add_argument("--limits-only", action="store_true")
+    args = parser.parse_args()
+
+    record = build_record(force=args.force, limits_only=args.limits_only)
+    print(json.dumps(record, separators=(",", ":")))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

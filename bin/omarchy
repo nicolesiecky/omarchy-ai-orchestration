@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [[ ${1:-} == "agent" && ${2:-} != "crash" && ${2:-} != "prompt" && ${2:-} != "usage" && ${2:-} != "--help" && ${2:-} != "-h" ]]; then
+  exec omarchy-agent "${@:2}"
+elif [[ ${1:-} == "default" && ${2:-} == "agent" && ${3:-} != "--help" && ${3:-} != "-h" ]]; then
+  exec omarchy-default-agent "${@:3}"
+else
+  exec /usr/bin/omarchy "$@"
+fi
