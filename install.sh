@@ -48,12 +48,24 @@ cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.gemini/config/AGENTS.md"
 cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.agents/rules/orchestration.md"
 [[ ! -f "$HOME/Work/AGENTS.md" ]] && cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/Work/AGENTS.md"
 
-# 5. Install Codex Query Skill
+# 5. Configure Antigravity MCP Servers (Figma, etc.)
+echo -e "${BLUE}==>${NC} Configuring Antigravity MCP servers..."
+MCP_CONFIG="$HOME/.gemini/config/mcp_config.json"
+if [[ -f "$SCRIPT_DIR/config/gemini/mcp_config.json" ]]; then
+  if [[ ! -f "$MCP_CONFIG" || ! -s "$MCP_CONFIG" ]]; then
+    cp -f "$SCRIPT_DIR/config/gemini/mcp_config.json" "$MCP_CONFIG"
+  elif command -v jq >/dev/null 2>&1; then
+    tmp=$(mktemp)
+    jq -s '.[0] * .[1]' "$MCP_CONFIG" "$SCRIPT_DIR/config/gemini/mcp_config.json" > "$tmp" && mv "$tmp" "$MCP_CONFIG"
+  fi
+fi
+
+# 6. Install Codex Query Skill
 echo -e "${BLUE}==>${NC} Installing Codex Query skill..."
 mkdir -p "$HOME/.agents/skills/codex-query"
 cp -f "$SCRIPT_DIR/config/skills/codex-query/SKILL.md" "$HOME/.agents/skills/codex-query/"
 
-# 6. Apply Hyprland bindings (Super+A)
+# 7. Apply Hyprland bindings (Super+A)
 BINDINGS_LUA="$HOME/.config/hypr/bindings.lua"
 if [[ -f "$BINDINGS_LUA" ]]; then
   if ! grep -q "SUPER + A" "$BINDINGS_LUA"; then
@@ -62,7 +74,7 @@ if [[ -f "$BINDINGS_LUA" ]]; then
   fi
 fi
 
-# 7. Apply Hyprland window rules (Floating HUD)
+# 8. Apply Hyprland window rules (Floating HUD)
 HYPRLAND_LUA="$HOME/.config/hypr/hyprland.lua"
 if [[ -f "$HYPRLAND_LUA" ]]; then
   if ! grep -q "org.omarchy.agent" "$HYPRLAND_LUA"; then
@@ -79,7 +91,7 @@ EOF
   fi
 fi
 
-# 8. Reload Hyprland and Omarchy Shell
+# 9. Reload Hyprland and Omarchy Shell
 echo -e "${BLUE}==>${NC} Refreshing Omarchy bar and reloading Hyprland..."
 if command -v hyprctl >/dev/null 2>&1; then
   hyprctl reload >/dev/null 2>&1 || true

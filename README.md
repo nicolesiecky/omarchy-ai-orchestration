@@ -101,8 +101,29 @@ Instalator automatycznie:
 2. Skonfiguruje domyślnego agenta w Omarchy i doda pozycję do menu.
 3. Włączy podwójny monitoring agentów (`antigravity` + `codex`) na pasku.
 4. Zainstaluje globalne reguły `AGENTS.md` oraz skill dla Codexa.
-5. Dopisze skrót <kbd>Super</kbd> + <kbd>A</kbd> i regułę okna do Hyprlanda.
-6. Zrestartuje pasek Omarchy i zrekompiluje konfigurację Hyprlanda.
+5. Skonfiguruje serwery MCP (m.in. oficjalny serwer Figma MCP).
+6. Dopisze skrót <kbd>Super</kbd> + <kbd>A</kbd> i regułę okna do Hyprlanda.
+7. Zrestartuje pasek Omarchy i zrekompiluje konfigurację Hyprlanda.
+
+---
+
+## 🔌 Integracja MCP (Model Context Protocol) & Narzędzia
+
+W repozytorium znajduje się wstępnie skonfigurowana integracja z protokołem **MCP** (`~/.gemini/config/mcp_config.json`):
+
+- **Figma MCP (`https://mcp.figma.com/mcp`)**: Umożliwia agentowi bezpośredni odczyt plików, komponentów, hierarchii węzłów i tokenów stylów z Figmy.
+
+Narzędzie można weryfikować bezpośrednio przez CLI Antigravity:
+```bash
+agy mcp list
+```
+
+---
+
+## 🏛️ Architektura Rozszerzona (Claude Fable 5.1 Roadmap)
+
+Kompletna koncepcja włączenia modelu **Claude Fable 5.1** do ekosystemu (jako Lead Architect, audytor design systemów i arbiter jakości) została szczegółowo udokumentowana w:
+👉 **[`docs/claude-fable-architecture.md`](docs/claude-fable-architecture.md)**
 
 ---
 
@@ -112,6 +133,8 @@ Instalator automatycznie:
 omarchy-ai-orchestration/
 ├── install.sh                                # Skrypt instalacyjny (idempotentny)
 ├── README.md                                 # Kompletna dokumentacja
+├── docs/
+│   └── claude-fable-architecture.md          # Koncepcja 4-modelowa z Claude Fable 5.1
 ├── bin/
 │   ├── omarchy                               # Wrapper CLI przekierowujący komendy agenta
 │   ├── omarchy-agent                         # Launcher agenta TUI w oknie org.omarchy.agent
@@ -121,7 +144,8 @@ omarchy-ai-orchestration/
 │   └── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem
 └── config/
     ├── gemini/
-    │   └── AGENTS.md                         # 16 Profili i Algorytm 3 Pytań
+    │   ├── AGENTS.md                         # 16 Profili i Algorytm 3 Pytań
+    │   └── mcp_config.json                   # Konfiguracja serwerów MCP (Figma)
     ├── omarchy/
     │   ├── defaults/agent                    # Domyślny agent (antigravity)
     │   └── extensions/omarchy-menu.jsonc     # Wpis w menu Omarchy (Setup > Agent)
