@@ -160,4 +160,4 @@ omarchy-ai-orchestration/
 
 ## 📄 Licencja
 
-MIT © [Nicole Siecki](https://github.com/nicolesiecky)
+MIT © [Nico Lesiecky](https://github.com/nicolesiecky)
