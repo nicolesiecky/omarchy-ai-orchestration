@@ -45,8 +45,16 @@ fi
 echo -e "${BLUE}==>${NC} Installing AGENTS.md rules..."
 mkdir -p "$HOME/.gemini/config" "$HOME/.agents/rules" "$HOME/Work"
 cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.gemini/config/AGENTS.md"
+cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.gemini/GEMINI.md"
 cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.agents/rules/orchestration.md"
-[[ ! -f "$HOME/Work/AGENTS.md" ]] && cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/Work/AGENTS.md"
+cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/Work/AGENTS.md"
+
+# Propagate AGENTS.md to all sub-repositories in ~/Work
+for d in "$HOME/Work"/*/; do
+  if [[ -d "$d/.git" ]]; then
+    cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$d/AGENTS.md"
+  fi
+done
 
 # 5. Configure Antigravity MCP Servers (Figma, etc.)
 echo -e "${BLUE}==>${NC} Configuring Antigravity MCP servers..."
