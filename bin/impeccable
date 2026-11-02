@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+export IMPECCABLE_SKILL_DIR="/home/noly/.gemini/skills/impeccable"
+export IMPECCABLE_BIN="/home/noly/.gemini/skills/impeccable/scripts/bin/linux-x64/impeccable"
+exec /home/noly/.gemini/skills/impeccable/scripts/impeccable "$@"

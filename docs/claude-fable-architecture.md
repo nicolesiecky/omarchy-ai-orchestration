@@ -39,12 +39,13 @@ flowchart TD
 - **Zadanie:** Przed napisaniem właściwego kodu w złożonych modułach, Fable 5.1 definiuje czyste, ergonomiczne kontrakty TypeScript / Rust / Python.
 - **Dlaczego Claude:** Posiada wyjątkową zdolność unikania przekombinowanych abstrakcji, tworząc API, które jest intuicyjne dla człowieka.
 
-### 2. Most UI/UX & Integracja z Figma MCP
-- **Zadanie:** Połączenie z oficjalnym serwerem Figma MCP (`https://mcp.figma.com/mcp`).
+### 2. Most UI/UX & Integracja z Figma MCP i Impeccable
+- **Zadanie:** Połączenie z oficjalnym serwerem Figma MCP (`https://mcp.figma.com/mcp`) oraz silnikiem craftu Impeccable.
 - **Przebieg:**
   1. Pobranie z Figmy struktury węzłów (frames, auto-layout, tokeny kolorów i typografii).
   2. Przetłumaczenie przez Claude Fable hierarchii wizualnej na semantyczny kod komponentów (React / Tailwind / Vue).
-  3. Claude dba o dostępność (a11y), stany hover/focus/disabled i responsywność, eliminując typowe „halucynacje stylowe”.
+  3. Egzekwowanie reguł Impeccable `craft-floor.md` (eliminacja szablonów AI-slop, zakaz sztucznych purpurowych gradientów, dobór nieszablonowej typografii, rygorystyczny kontrast WCAG).
+  4. Claude dba o dostępność (a11y), stany hover/focus/disabled i responsywność, eliminując typowe „halucynacje stylowe”.
 
 ### 3. Senior Code Reviewer & Audytor Logiki Biznesowej
 - **Zadanie:** Ostateczny przegląd diffa przed zatwierdzeniem zmian w repozytorium.

@@ -106,3 +106,35 @@ Before taking any action, classify the incoming prompt using this 3-question fil
 1. **Zadania Mieszane (Multi-Intent):** Rozbijaj zapytanie na pod-kroki; uruchamiaj narzędzia tylko dla tej części zadania, która tego wymaga.
 2. **Akcje Destrukcyjne:** Polecenia nieodwracalne (`rm -rf`, `drop database`, `git push --force`) bezwzględnie wymagają wyraźnego potwierdzenia użytkownika.
 3. **Domyślna Ścieżka (Zero-Risk Fallback):** W razie niejednoznaczności promptu, zawsze przyjmuj najmniej inwazyjny profil (Profil 1: Czat / Pytanie doprecyzowujące).
+
+---
+
+## IV. Protokół Frontend Craft & Impeccable Engine
+
+Kiedy zadanie dotyczy tworzenia, stylizacji lub modyfikacji interfejsów użytkownika (HTML/CSS, React, Vue, Next.js, strony docelowe, portfolio, systemy designu):
+
+1. **Kontekst Produktu & Tryb Powierzchni (Modes):**
+   - Przy nowych projektach lub rebrandingu: upewnij się, że istnieje `PRODUCT.md` oraz `DESIGN.md` (komendy `/init`, `/document`, `/shape`).
+   - Określ tryb powierzchni (Mode):
+     - `Persuade`: Landing pages, marketing (odważna tożsamość, silny punkt widzenia).
+     - `Operate`: Dashboardy, panele admina, narzędzia (skanowalność, dyscyplina, szybkość).
+     - `Read`: Dokumentacja, blogi, artykuły (typografia i czytelność).
+     - `Experience`: Portfolia, galerie, showcase (interfejs wycofany, dzieło/treść na pierwszym planie).
+
+2. **Integracja z Figma MCP:**
+   - Pobieraj hierarchię ramek, auto-layout i tokeny z Figmy (`get_design_context`, `get_screenshot`).
+   - Tłumacz styl z Figmy bezpośrednio na semantyczne tokeny w `DESIGN.md` oraz czysty kod komponentów.
+
+3. **Standard Craft Floor (Bezwzględny Zakaz AI-Slop):**
+   - Zgodnie z wytycznymi Impeccable: eliminacja generycznych wzorców AI (gradienty fioletowo-cyjanowe, grube obramowania boczne `side-tab`, zaokrąglenia z grubym obrysem `border-accent-on-rounded`, nadużywane czcionki bez wyrazu jak Inter/Roboto/Geist, spłaszczona hierarchia typograficzna).
+   - Wymagana dbałość o odstępy, kontrast WCAG, stany interakcji (hover, focus-visible, active) i responsywność mobile-to-desktop.
+
+4. **Deterministyczna Walidacja Detektorem UI (`impeccable detect`):**
+   - Po każdej implementacji lub zmianie plików UI wykonaj weryfikację detektorem:
+     ```bash
+     impeccable detect --json <pliki-lub-katalog>
+     ```
+   - Wszystkie błędy antyszablonów i jakości muszą zostać usunięte przed zatwierdzeniem zmian.
+
+5. **Natywne Skille i Skróty Impeccable:**
+   - Wykorzystuj bezpośrednie komendy: `/audit` (audyt dostępności i jakości), `/polish` (ostatnie szlify i detale), `/bolder` (ożywienie nijakiego UI), `/quieter` (uspokojenie krzykliwych elementów), `/harden` (odporność na błędy, overflow, i18n), `/animate` (celowe mikroanimacje).

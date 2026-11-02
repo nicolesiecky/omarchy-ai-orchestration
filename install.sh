@@ -18,7 +18,7 @@ echo -e "${BLUE}==>${NC} Installing Omarchy AI Orchestration setup..."
 echo -e "${BLUE}==>${NC} Installing binaries to ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
 cp -f "$SCRIPT_DIR"/bin/* "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query
+chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable
 
 # 2. Configure Omarchy defaults & menu
 echo -e "${BLUE}==>${NC} Configuring Omarchy defaults & menu..."
@@ -65,7 +65,15 @@ echo -e "${BLUE}==>${NC} Installing Codex Query skill..."
 mkdir -p "$HOME/.agents/skills/codex-query"
 cp -f "$SCRIPT_DIR/config/skills/codex-query/SKILL.md" "$HOME/.agents/skills/codex-query/"
 
-# 7. Apply Hyprland bindings (Super+A)
+# 7. Pin Impeccable Design & Frontend Skills
+if [[ -x "$HOME/.local/bin/impeccable" ]]; then
+  echo -e "${BLUE}==>${NC} Pinning Impeccable design skills & slash commands..."
+  for cmd in init extract document shape critique audit polish bolder quieter distill harden onboard live animate colorize typeset layout delight overdrive clarify adapt optimize generate; do
+    "$HOME/.local/bin/impeccable" pin pin "$cmd" >/dev/null 2>&1 || true
+  done
+fi
+
+# 8. Apply Hyprland bindings (Super+A)
 BINDINGS_LUA="$HOME/.config/hypr/bindings.lua"
 if [[ -f "$BINDINGS_LUA" ]]; then
   if ! grep -q "SUPER + A" "$BINDINGS_LUA"; then
@@ -74,7 +82,7 @@ if [[ -f "$BINDINGS_LUA" ]]; then
   fi
 fi
 
-# 8. Apply Hyprland window rules (Floating HUD)
+# 9. Apply Hyprland window rules (Floating HUD)
 HYPRLAND_LUA="$HOME/.config/hypr/hyprland.lua"
 if [[ -f "$HYPRLAND_LUA" ]]; then
   if ! grep -q "org.omarchy.agent" "$HYPRLAND_LUA"; then
@@ -91,7 +99,7 @@ EOF
   fi
 fi
 
-# 9. Reload Hyprland and Omarchy Shell
+# 10. Reload Hyprland and Omarchy Shell
 echo -e "${BLUE}==>${NC} Refreshing Omarchy bar and reloading Hyprland..."
 if command -v hyprctl >/dev/null 2>&1; then
   hyprctl reload >/dev/null 2>&1 || true

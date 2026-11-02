@@ -97,13 +97,30 @@ cd omarchy-ai-orchestration
 ```
 
 Instalator automatycznie:
-1. Skopiuje i nada uprawnienia skryptom w `~/.local/bin/`.
+1. Skopiuje i nada uprawnienia skryptom w `~/.local/bin/` (w tym `impeccable`).
 2. Skonfiguruje domyślnego agenta w Omarchy i doda pozycję do menu.
 3. Włączy podwójny monitoring agentów (`antigravity` + `codex`) na pasku.
-4. Zainstaluje globalne reguły `AGENTS.md` oraz skill dla Codexa.
+4. Zainstaluje globalne reguły `AGENTS.md` z Protokołem Frontend & Impeccable Craft.
 5. Skonfiguruje serwery MCP (m.in. oficjalny serwer Figma MCP).
-6. Dopisze skrót <kbd>Super</kbd> + <kbd>A</kbd> i regułę okna do Hyprlanda.
-7. Zrestartuje pasek Omarchy i zrekompiluje konfigurację Hyprlanda.
+6. Zainstaluje skill Codex Query oraz przypnie 24 komendy Impeccable (`/shape`, `/audit`, `/polish`...).
+7. Dopisze skrót <kbd>Super</kbd> + <kbd>A</kbd> i regułę okna do Hyprlanda.
+8. Zrestartuje pasek Omarchy i zrekompiluje konfigurację Hyprlanda.
+
+---
+
+## 🎨 Frontend Craft & Silnik Impeccable
+
+Do orkiestracji został włączony silnik **Impeccable** (`v4.8.0`) gwarantujący bezkompromisową jakość interfejsów, eliminację tandetnych wzorców „AI slop” oraz deterministyczną walidację kodu:
+
+- **Wrapper CLI (`~/.local/bin/impeccable`)**: Globalnie dostępny w systemie, integruje natywny silnik `impeccable detect` oraz narzędzia wizualne (`magick`, `ffmpeg`).
+- **24 Natywne Skille / Slash-Commands**: Wszystkie kluczowe komendy Impeccable są dostępne bezpośrednio jako skróty w Antigravity (`/init`, `/shape`, `/document`, `/audit`, `/polish`, `/bolder`, `/quieter`, `/harden`, `/animate`, `/typeset`, `/layout` itd.).
+- **Deterministyczny Detektor UI**:
+  ```bash
+  impeccable detect --json src/
+  ```
+  Skanuje kod pod kątem antyszablonów (nadużywane fonty Inter/Roboto, generyczne gradienty fiolet/cyan, spłaszczona hierarchia typograficzna, brak kontrastu WCAG).
+- **Synergia z Figma MCP**:
+  Połączenie z serwerem **Figma MCP** pozwala automatycznie mapować makiety na spójne tokeny `DESIGN.md` oraz reguły `craft-floor.md`, tworząc interfejsy o standardzie human-designed craft.
 
 ---
 
@@ -141,7 +158,8 @@ omarchy-ai-orchestration/
 │   ├── omarchy-default-agent                 # Zarządzanie domyślnym agentem (obsługa antigravity)
 │   ├── omarchy-agent-usage-antigravity       # Natywny kolektor statystyk i limitów na żywo
 │   ├── omarchy-agent-usage-update            # Runner zbierający dane do ~/.local/state/omarchy/
-│   └── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem
+│   ├── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem
+│   └── impeccable                            # Globalny wrapper do silnika craftu i detektora UI
 └── config/
     ├── gemini/
     │   ├── AGENTS.md                         # 16 Profili i Algorytm 3 Pytań
