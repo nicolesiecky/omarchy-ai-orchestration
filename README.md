@@ -108,19 +108,21 @@ Instalator automatycznie:
 
 ---
 
-## 🎨 Frontend Craft & Silnik Impeccable
+## 🎨 Unified Frontend Craft Engine (`Inspiration Scout` + `Impeccable` + `TasteSkill 2.5` + `UI/UX Pro Max`)
 
-Do orkiestracji został włączony silnik **Impeccable** (`v4.8.0`) gwarantujący bezkompromisową jakość interfejsów, eliminację tandetnych wzorców „AI slop” oraz deterministyczną walidację kodu:
+Każde zadanie front-endowe uruchamia wielowarstwowy potok projektowy łączący research inspiracji, 3 silniki designu oraz podwójną walidację w przeglądarce:
 
-- **Wrapper CLI (`~/.local/bin/impeccable`)**: Globalnie dostępny w systemie, integruje natywny silnik `impeccable detect` oraz narzędzia wizualne (`magick`, `ffmpeg`).
-- **24 Natywne Skille / Slash-Commands**: Wszystkie kluczowe komendy Impeccable są dostępne bezpośrednio jako skróty w Antigravity (`/init`, `/shape`, `/document`, `/audit`, `/polish`, `/bolder`, `/quieter`, `/harden`, `/animate`, `/typeset`, `/layout` itd.).
-- **Deterministyczny Detektor UI**:
-  ```bash
-  impeccable detect --json src/
-  ```
-  Skanuje kod pod kątem antyszablonów (nadużywane fonty Inter/Roboto, generyczne gradienty fiolet/cyan, spłaszczona hierarchia typograficzna, brak kontrastu WCAG).
-- **Synergia z Figma MCP**:
-  Połączenie z serwerem **Figma MCP** pozwala automatycznie mapować makiety na spójne tokeny `DESIGN.md` oraz reguły `craft-floor.md`, tworząc interfejsy o standardzie human-designed craft.
+1. **Subagent & CLI `inspiration-scout` (`~/.local/bin/inspiration-scout`)**:
+   - Obowiązkowy pierwszy krok przed projektowaniem UI: przeszukuje 5 referencyjnych galerii (**[21st.dev](https://21st.dev/)**, **[Godly.design](https://godly.design/)**, **[Awwwards](https://awwwards.com/)**, **[Land-book](https://land-book.com/)**, **[Dribbble](https://dribbble.com/)**) i generuje **Inspiration Dossier** dla **Design Architecta** (`design-architect`).
+2. **TasteSkill 2.5 (`~/.local/bin/taste-skill` / skill `design-taste-frontend`)**:
+   - Standardy `figma.com` i `x.ai`: losowanie nieoklepanych palet, parowań Google Fonts i geometrii Hero (`taste-skill start deal`, `taste-skill deal-hero`), 9 Żelaznych Zasad (1 sekcja na ekran, równe krawędzie `.wrap`, fizyczne mikroanimacje hover bez tandetnego 3D tilt, zakaz fioletu AI) oraz testy w headless Chromium (`consistency.mjs`, `check.mjs`).
+3. **UI/UX Pro Max (`~/.local/bin/uipro-search` / skill `ui-ux-pro-max`)**:
+   - Lokalna baza inteligencji UI/UX: 80 stylów UI, 192 palety produktowe, 74 parowania czcionek, 119 reguł UX (kontrast 4.5:1, touch targets 44×44px, CLS < 0.1), 17 presetów GSAP i wytyczne dla 22 stacków (`react`, `nextjs`, `astro`, `shadcn`, `threejs` itd.).
+4. **Impeccable v4.8.0 (`~/.local/bin/impeccable` + 24 skille `/shape`, `/audit`, `/polish`...)**:
+   - Zarządzanie trybami powierzchni (`Persuade`, `Operate`, `Read`, `Experience`), `PRODUCT.md` / `DESIGN.md` oraz deterministyczny detektor anty-szablonów:
+     ```bash
+     impeccable detect --json src/
+     ```
 
 ---
 
@@ -128,9 +130,10 @@ Do orkiestracji został włączony silnik **Impeccable** (`v4.8.0`) gwarantując
 
 W repozytorium znajduje się wstępnie skonfigurowana integracja z protokołem **MCP** (`~/.gemini/config/mcp_config.json`):
 
-- **Figma MCP (`https://mcp.figma.com/mcp`)**: Umożliwia agentowi bezpośredni odczyt plików, komponentów, hierarchii węzłów i tokenów stylów z Figmy.
+- **Figma MCP (`https://mcp.figma.com/mcp`)**: Bezpośredni odczyt plików, komponentów, hierarchii węzłów i tokenów stylów z Figmy.
+- **Higgsfield MCP (`https://mcp.higgsfield.ai/mcp`)**: Generowanie wideo AI, animacji, teł filmowych i kreacji wizualnych bezpośrednio do sekcji Hero i showcase'ów.
 
-Narzędzie można weryfikować bezpośrednio przez CLI Antigravity:
+Narzędzia można weryfikować bezpośrednio przez CLI Antigravity:
 ```bash
 agy mcp list
 ```
@@ -159,11 +162,14 @@ omarchy-ai-orchestration/
 │   ├── omarchy-agent-usage-antigravity       # Natywny kolektor statystyk i limitów na żywo
 │   ├── omarchy-agent-usage-update            # Runner zbierający dane do ~/.local/state/omarchy/
 │   ├── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem
-│   └── impeccable                            # Globalny wrapper do silnika craftu i detektora UI
+│   ├── impeccable                            # Globalny wrapper do silnika craftu i detektora UI
+│   ├── taste-skill                           # CLI dispatcher do TasteSkill 2.5 (deal, check, shoot)
+│   ├── uipro-search                          # CLI wyszukiwarka bazy UI/UX Pro Max (80 stylów, 192 palety)
+│   └── inspiration-scout                     # Generator briefu inspiracji (21st.dev, Godly, Awwwards...)
 └── config/
     ├── gemini/
-    │   ├── AGENTS.md                         # 16 Profili i Algorytm 3 Pytań
-    │   └── mcp_config.json                   # Konfiguracja serwerów MCP (Figma)
+    │   ├── AGENTS.md                         # Reguły orkiestracji + 5-etapowy Protokół Frontend
+    │   └── mcp_config.json                   # Konfiguracja serwerów MCP (Figma + Higgsfield)
     ├── omarchy/
     │   ├── defaults/agent                    # Domyślny agent (antigravity)
     │   └── extensions/omarchy-menu.jsonc     # Wpis w menu Omarchy (Setup > Agent)
@@ -171,7 +177,9 @@ omarchy-ai-orchestration/
     │   ├── bindings.patch.lua                # Skrót klawiszowy Super+A
     │   └── hyprland.patch.lua                # Reguła pływającego okna 1100x750
     └── skills/
-        └── codex-query/SKILL.md              # Skill Antigravity do zapytań do Codexa
+        ├── codex-query/SKILL.md              # Skill Antigravity do zapytań do Codexa
+        ├── inspiration-scout/SKILL.md        # Skill subagenta researchu inspiracji UI
+        └── design-architect/SKILL.md         # Skill architekta łączącego Impeccable + TasteSkill + UI/UX Pro Max
 ```
 
 ---

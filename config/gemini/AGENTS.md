@@ -127,32 +127,55 @@ Before taking any action, classify the incoming prompt using this 3-question fil
 
 ---
 
-## IV. Protokół Frontend Craft & Impeccable Engine
+## IV. Protokół Frontend Craft & Unified Multi-Skill Design Engine
 
-Kiedy zadanie dotyczy tworzenia, stylizacji lub modyfikacji interfejsów użytkownika (HTML/CSS, React, Vue, Next.js, strony docelowe, portfolio, systemy designu):
+Kiedykolwiek zadanie dotyczy tworzenia, projektowania, przebudowy lub stylizacji front-endu (HTML/CSS, React, Next.js, Astro, Vue, Svelte, Tailwind, landing pages, portfolia, dashboardy, systemy designu), **ZAWSZE uruchamiaj poniższy 5-etapowy potok projektowy**:
 
-1. **Kontekst Produktu & Tryb Powierzchni (Modes):**
-   - Przy nowych projektach lub rebrandingu: upewnij się, że istnieje `PRODUCT.md` oraz `DESIGN.md` (komendy `/init`, `/document`, `/shape`).
-   - Określ tryb powierzchni (Mode):
-     - `Persuade`: Landing pages, marketing (odważna tożsamość, silny punkt widzenia).
-     - `Operate`: Dashboardy, panele admina, narzędzia (skanowalność, dyscyplina, szybkość).
-     - `Read`: Dokumentacja, blogi, artykuły (typografia i czytelność).
-     - `Experience`: Portfolia, galerie, showcase (interfejs wycofany, dzieło/treść na pierwszym planie).
+### 1. Obowiązkowy Research Inspiracji — Subagent `inspiration-scout`
+Przed zaprojektowaniem architektury UI lub napisaniem kodu, **ZAWSZE** uruchom subagenta `inspiration-scout` (lub skill `inspiration-scout` + skrypt `~/.local/bin/inspiration-scout "<temat>" <site-kind> <page-type>`), który zbiera dużą bazę inspiracji z 5 referencyjnych serwisów (`search_web`):
+- **https://21st.dev/** (`domain: "21st.dev"`) — nowoczesne komponenty React/Tailwind/shadcn, mikrointerakcje, bento cards, przyciski i shadery.
+- **https://godly.design/** (`domain: "godly.design"`) — wybitne, nowoczesne layouty webowe, rytm sekcji, interaktywna typografia.
+- **https://awwwards.com** (`domain: "awwwards.com"`) — nagradzana dyrekcja artystyczna (SOTD), choreografia ruchu, WebGL/canvas, nietuzinkowe siatki.
+- **https://land-book.com/** (`domain: "land-book.com"`) — architektura landing page'y, narracja sekcji, hierarchia konwersji.
+- **https://dribbble.com/** (`domain: "dribbble.com"`) — detale UI, wizualizacje danych, gęstość komponentów i harmonia kolorystyczna.
 
-2. **Integracja z Figma MCP:**
-   - Pobieraj hierarchię ramek, auto-layout i tokeny z Figmy (`get_design_context`, `get_screenshot`).
-   - Tłumacz styl z Figmy bezpośrednio na semantyczne tokeny w `DESIGN.md` oraz czysty kod komponentów.
+Subagent zwraca **Inspiration Dossier** jako punkt wyjścia dla **Design Architecta** (`design-architect`).
 
-3. **Standard Craft Floor (Bezwzględny Zakaz AI-Slop):**
-   - Zgodnie z wytycznymi Impeccable: eliminacja generycznych wzorców AI (gradienty fioletowo-cyjanowe, grube obramowania boczne `side-tab`, zaokrąglenia z grubym obrysem `border-accent-on-rounded`, nadużywane czcionki bez wyrazu jak Inter/Roboto/Geist, spłaszczona hierarchia typograficzna).
-   - Wymagana dbałość o odstępy, kontrast WCAG, stany interakcji (hover, focus-visible, active) i responsywność mobile-to-desktop.
+### 2. Synergia 3 Silników Designu (`Impeccable` + `TasteSkill 2.5` + `UI/UX Pro Max`)
+Architekt Designu łączy wszystkie 3 zainstalowane skille w jeden spójny system:
+- **A. `ui-ux-pro-max` (`~/.local/bin/uipro-search`) — Inteligencja UX, Palety, Style & Stack**:
+  - Wywołaj `uipro-search "<zapytanie>" --design-system --variance <1-10> --motion <1-10> --density <1-10>` (oraz `--persist -p "<Projekt>" --output-dir "<root>"` dla `design-system/<slug>/MASTER.md`).
+  - Korzystaj z 80 stylów UI, 192 palet produktowych, 74 parowań czcionek, 119 reguł UX (priorytety 1–10: kontrast WCAG 4.5:1, touch targets 44×44px, CLS < 0.1, focus rings) i wytycznych dla 22 stacków (`--stack react|nextjs|astro|shadcn|html-tailwind|threejs`).
+- **B. `design-taste-frontend` (`TasteSkill 2.5` — `~/.local/bin/taste-skill`) — Poziom `figma.com` / `x.ai` & 9 House Rules**:
+  - Losuj nieoklepane palety, czcionki i geometrię hero przez `taste-skill start deal --page <kind>` oraz `taste-skill deal-hero --type <page-type>`.
+  - **9 Żelaznych Zasad TasteSkill**:
+    1. Brak podpisów/tłumaczeń pod obrazami (licencje w jednej linii w stopce).
+    2. Każdy element wizualny renderuje się na `1440, 1024, 768, 390` (zero pustych dziur).
+    3. **Jedna sekcja na ekran**: Hero sam na pierwszym ekranie, każda sekcja ma wysokość dokładnie 1 lub 2 ekranów przy `1440×900`.
+    4. **Równe krawędzie lewa i prawa** (`.wrap`).
+    5. **Ciche, fizyczne mikroanimacje hover**: karta unosi się o `2px`, zdjęcie powiększa `1.02–1.03` w ramce, przyciski reagują skokiem na hover/active, podkreślenia rysują się płynnie. Zakaz tandetnego 3D tilt, karuzel czasowych i animowania kart przy scrollu.
+    6. Prawdziwe zasoby wizualne: autentyczne zdjęcia, prawdziwe UI produktu jako żywy HTML w `app-frame`, pełnokolorowe ikony marek (`taste-skill icons`), pulsujące diagramy SVG; efekty shaderowe/WebGL wyłącznie na stronach `software`, `gaming`, `tech`.
+    7. Konkretny, rzeczowy copywriting (60–80 słów na ekran poza mockami UI, rzeczownik w każdym nagłówku, czasownik + dopełnienie w przyciskach).
+    8. **Całkowity zakaz fioletu/lawendy** w palecie strony.
+- **C. `impeccable` (`v4.8.0` — `~/.local/bin/impeccable`) — Surface Modes, Craft Floor & Komendy Szlifujące**:
+  - Dobierz tryb powierzchni (**Mode**): `Persuade` (landing/marketing), `Operate` (dashboard/aplikacja), `Read` (dokumentacja/artykuł), `Experience` (portfolio/showcase).
+  - Przestrzegaj `reference/craft-floor.md` oraz `PRODUCT.md` / `DESIGN.md`.
+  - Używaj natywnych skilli: `/shape`, `/init`, `/document`, `/critique`, `/audit`, `/polish`, `/bolder`, `/quieter`, `/distill`, `/harden`, `/animate`, `/typeset`, `/layout`, `/overdrive`.
 
-4. **Deterministyczna Walidacja Detektorem UI (`impeccable detect`):**
-   - Po każdej implementacji lub zmianie plików UI wykonaj weryfikację detektorem:
-     ```bash
-     impeccable detect --json <pliki-lub-katalog>
-     ```
-   - Wszystkie błędy antyszablonów i jakości muszą zostać usunięte przed zatwierdzeniem zmian.
+### 3. Integracja Kreatywnych Serwerów MCP (`Figma` + `Higgsfield`)
+- **Figma MCP (`https://mcp.figma.com/mcp`)**: Pobieraj strukturę węzłów, zmienne i auto-layout (`get_design_context`, `get_screenshot`) lub eksportuj komponenty do Figmy.
+- **Higgsfield MCP (`https://mcp.higgsfield.ai/mcp`)**: Wykorzystuj serwer `Higgsfield` do generowania wideo AI, sekwencji ruchu, teł filmowych oraz renderów wizualnych do sekcji Hero i showcase'ów.
 
-5. **Natywne Skille i Skróty Impeccable:**
-   - Wykorzystuj bezpośrednie komendy: `/audit` (audyt dostępności i jakości), `/polish` (ostatnie szlify i detale), `/bolder` (ożywienie nijakiego UI), `/quieter` (uspokojenie krzykliwych elementów), `/harden` (odporność na błędy, overflow, i18n), `/animate` (celowe mikroanimacje).
+### 4. Podwójna Deterministyczna Bramka Walidacyjna (Dual Verification Gate)
+Przed zakończeniem każdego zadania front-endowego wykonaj obowiązkową weryfikację:
+1. **Skaner Anty-Slop Impeccable**:
+   ```bash
+   impeccable detect --json <pliki-lub-katalog-lub-url>
+   ```
+   *(Zero błędów typu `side-tab`, `border-accent-on-rounded`, `overused-font`, `flat-type-hierarchy`, `gradient-text`, `ai-color-palette`).*
+2. **Inspektor Przeglądarkowy TasteSkill (Headless Chromium)**:
+   ```bash
+   taste-skill consistency <plik-html-lub-url> --widths 1440,1024,820,768,390 --rhythm-widths 1440,820,768,390 --page <kind>
+   taste-skill check --url <plik-html-lub-url> --sizes 1440x900,1024x768,820x1180,768x1024,390x844
+   ```
+   *(Wszystkie błędy layoutu, krawędzi i responsywności muszą zostać naprawione przed oddaniem pracy).*

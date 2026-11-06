@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+SKILL_SCRIPT="$HOME/.local/share/agent-skills/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/scripts/search.py"
+if [[ ! -f "$SKILL_SCRIPT" ]]; then
+  SKILL_SCRIPT="$HOME/.gemini/skills/ui-ux-pro-max/scripts/search.py"
+fi
+exec python3 "$SKILL_SCRIPT" "$@"

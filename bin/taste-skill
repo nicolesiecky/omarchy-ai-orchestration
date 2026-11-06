@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+TASTE_DIR="$HOME/.local/share/agent-skills/taste-skill/skills/taste-skill"
+if [[ ! -d "$TASTE_DIR" ]]; then
+  TASTE_DIR="$HOME/.gemini/skills/design-taste-frontend"
+fi
+
+cmd="${1:-help}"
+shift || true
+
+case "$cmd" in
+  start)
+    exec node "$TASTE_DIR/scripts/start.mjs" "$@"
+    ;;
+  deal-hero|hero)
+    exec node "$TASTE_DIR/assets/layout/deal.mjs" "$@"
+    ;;
+  consistency)
+    exec node "$TASTE_DIR/scripts/consistency.mjs" "$@"
+    ;;
+  check|layout-check)
+    exec node "$TASTE_DIR/assets/layout/check.mjs" "$@"
+    ;;
+  shoot)
+    exec node "$TASTE_DIR/scripts/shoot.mjs" "$@"
+    ;;
+  perf)
+    exec node "$TASTE_DIR/scripts/perf.mjs" "$@"
+    ;;
+  icons)
+    exec node "$TASTE_DIR/scripts/icons.mjs" "$@"
+    ;;
+  photos)
+    exec node "$TASTE_DIR/scripts/photos.mjs" "$@"
+    ;;
+  moments)
+    exec node "$TASTE_DIR/scripts/moments.mjs" "$@"
+    ;;
+  effects)
+    exec node "$TASTE_DIR/scripts/effects.mjs" "$@"
+    ;;
+  path)
+    echo "$TASTE_DIR"
+    ;;
+  *)
+    echo "Usage: taste-skill <start|deal-hero|consistency|check|shoot|perf|icons|photos|moments|effects|path> [args...]"
+    exit 1
+    ;;
+esac

@@ -18,7 +18,7 @@ echo -e "${BLUE}==>${NC} Installing Omarchy AI Orchestration setup..."
 echo -e "${BLUE}==>${NC} Installing binaries to ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
 cp -f "$SCRIPT_DIR"/bin/* "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable
+chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable "$HOME/.local/bin"/uipro-search "$HOME/.local/bin"/taste-skill "$HOME/.local/bin"/inspiration-scout
 
 # 2. Configure Omarchy defaults & menu
 echo -e "${BLUE}==>${NC} Configuring Omarchy defaults & menu..."
@@ -68,10 +68,35 @@ if [[ -f "$SCRIPT_DIR/config/gemini/mcp_config.json" ]]; then
   fi
 fi
 
-# 6. Install Codex Query Skill
-echo -e "${BLUE}==>${NC} Installing Codex Query skill..."
-mkdir -p "$HOME/.agents/skills/codex-query"
+# 6. Install Custom Orchestration Skills (codex-query, inspiration-scout, design-architect)
+echo -e "${BLUE}==>${NC} Installing orchestration & frontend architect skills..."
+mkdir -p "$HOME/.agents/skills/codex-query" "$HOME/.local/share/agent-skills/custom/inspiration-scout" "$HOME/.local/share/agent-skills/custom/design-architect"
 cp -f "$SCRIPT_DIR/config/skills/codex-query/SKILL.md" "$HOME/.agents/skills/codex-query/"
+cp -f "$SCRIPT_DIR/config/skills/inspiration-scout/SKILL.md" "$HOME/.local/share/agent-skills/custom/inspiration-scout/"
+cp -f "$SCRIPT_DIR/config/skills/design-architect/SKILL.md" "$HOME/.local/share/agent-skills/custom/design-architect/"
+
+# 6b. Ensure TasteSkill (Leonxlnx/taste-skill) & UI/UX Pro Max (nextlevelbuilder/ui-ux-pro-max-skill) are installed
+AGENT_SKILLS_DIR="$HOME/.local/share/agent-skills"
+if [[ ! -d "$AGENT_SKILLS_DIR/taste-skill" ]]; then
+  echo -e "${BLUE}==>${NC} Cloning TasteSkill (Leonxlnx/taste-skill)..."
+  git clone --depth 1 https://github.com/Leonxlnx/taste-skill "$AGENT_SKILLS_DIR/taste-skill" >/dev/null 2>&1 || true
+fi
+if [[ ! -d "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill" ]]; then
+  echo -e "${BLUE}==>${NC} Cloning UI/UX Pro Max (nextlevelbuilder/ui-ux-pro-max-skill)..."
+  git clone --depth 1 https://github.com/nextlevelbuilder/ui-ux-pro-max-skill "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill" >/dev/null 2>&1 || true
+  sed -i 's|python "\${CLAUDE_PLUGIN_ROOT}/\.claude/skills/ui-ux-pro-max/scripts/search\.py"|uipro-search|g' "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max/SKILL.md" 2>/dev/null || true
+fi
+
+for root in "$HOME/.gemini/skills" "$HOME/.agents/skills" "$HOME/.claude/skills"; do
+  mkdir -p "$root"
+  ln -sfn "$AGENT_SKILLS_DIR/custom/inspiration-scout" "$root/inspiration-scout"
+  ln -sfn "$AGENT_SKILLS_DIR/custom/design-architect" "$root/design-architect"
+  [[ -d "$AGENT_SKILLS_DIR/taste-skill/skills/taste-skill" ]] && ln -sfn "$AGENT_SKILLS_DIR/taste-skill/skills/taste-skill" "$root/design-taste-frontend"
+  [[ -d "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max" ]] && ln -sfn "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max" "$root/ui-ux-pro-max"
+  for sub in ui-styling design-system brand banner-design slides; do
+    [[ -d "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/$sub" ]] && ln -sfn "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/$sub" "$root/$sub"
+  done
+done
 
 # 7. Pin Impeccable Design & Frontend Skills
 if [[ -x "$HOME/.local/bin/impeccable" ]]; then

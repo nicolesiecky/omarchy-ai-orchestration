@@ -3,6 +3,10 @@
     "Figma": {
       "disabled": false,
       "serverUrl": "https://mcp.figma.com/mcp"
+    },
+    "Higgsfield": {
+      "disabled": false,
+      "serverUrl": "https://mcp.higgsfield.ai/mcp"
     }
   }
 }

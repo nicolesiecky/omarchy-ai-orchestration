@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# ==============================================================================
+# inspiration-scout — Frontend Inspiration & Multi-Skill Seed Generator
+# Combines:
+#   1. Reference matrix for 21st.dev, godly.design, awwwards.com, land-book.com, dribbble.com
+#   2. UI/UX Pro Max design-system intelligence (uipro-search)
+#   3. TasteSkill 2.5 dealt palettes, typography pairings & hero layouts (taste-skill)
+# ==============================================================================
+
+set -euo pipefail
+
+QUERY="${1:-modern web application}"
+PAGE_KIND="${2:-software}" # software | gaming | tech | product | service | place
+PAGE_TYPE="${3:-software}" # software | product | service | place
+
+echo "================================================================================"
+echo "🎨 INSPIRATION SCOUT — STARTING POINT BRIEF"
+echo "Query: $QUERY | Site-Kind: $PAGE_KIND | Page-Type: $PAGE_TYPE"
+echo "================================================================================"
+echo ""
+echo "## 1. MANDATORY WEB RESEARCH QUERIES (Execute via search_web in Subagent)"
+echo "Run search_web against these 5 gold-standard curation sources for '$QUERY':"
+echo "  1) [21st.dev Components & UI]  query: \"$QUERY component hero card\" domain: \"21st.dev\""
+echo "  2) [Godly.design Web Layout]   query: \"$QUERY website layout interactive\" domain: \"godly.design\""
+echo "  3) [Awwwards Art Direction]    query: \"$QUERY site of the day typography motion\" domain: \"awwwards.com\""
+echo "  4) [Land-book Landing Flow]    query: \"$QUERY landing page structure\" domain: \"land-book.com\""
+echo "  5) [Dribbble Visual Details]   query: \"$QUERY ui design system grid\" domain: \"dribbble.com\""
+echo ""
+echo "================================================================================"
+echo "## 2. TASTESKILL 2.5 — DEALT PALETTES & TYPOGRAPHY (Anti-Slop / Non-Cliché)"
+echo "================================================================================"
+HIST_DIR="${PWD}/.taste-skill"
+mkdir -p "$HIST_DIR"
+if command -v taste-skill >/dev/null 2>&1; then
+  taste-skill start deal --page "$PAGE_KIND" --history "$HIST_DIR/history.json" || true
+  echo ""
+  echo "--- Dealt Hero Layout ---"
+  taste-skill deal-hero --type "$PAGE_TYPE" --has photo,ui,object --history "$HIST_DIR/layout-history.json" || true
+fi
+
+echo ""
+echo "================================================================================"
+echo "## 3. UI/UX PRO MAX — DESIGN SYSTEM & UX INTELLIGENCE"
+echo "================================================================================"
+if command -v uipro-search >/dev/null 2>&1; then
+  uipro-search "$QUERY" --design-system -p "$QUERY" || true
+fi
