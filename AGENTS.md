@@ -235,9 +235,52 @@ Wszystkie interakcje między agentami odbywają się programowo bez koniecznośc
    - Przed wysłaniem promptu zweryfikuj stan docelowego agenta (`herdr agent get <TARGET>`).
    - Wysyłaj zapytania tylko gdy status to `idle` lub `done`. Jeśli agent jest `working`, poczekaj na zakończenie tury (`herdr agent wait <TARGET> --until idle`).
 
-### 3. Strategia Ekonomii Tokenów (Zero-Cost Maximization)
+### 3. Strategia Ekonomii Tokenów (Zero-Cost Maximization & Subscriptions)
 
 - **Zasada 90/10:** Co najmniej 90% surowego wolumenu kodu (szablony, implementacje funkcji, testy jednostkowe, boilerplate) kieruj do darmowych agentów z zakładki `Free Swarm` (`builder`, `scout`, `analyst`).
-- **Oszczędzanie Subskrypcji:** Modele płatne lub limitowane (`architect` / Codex GPT-6-Luna, `coordinator` / `reviewer` / Gemini AI One Pro) angażuj do celowanych zadań krytycznych (architektura, fuzzing, audyt bezpieczeństwa, ostateczny code review).
+- **Google AI One Pro (Antigravity):**
+  - Obsługuje `coordinator` (Tab 3), `strategist` (Tab 2) oraz `reviewer` (Tab 2).
+  - **Active Tier:** `gemini-3.8-flash` (błyskawiczny, 85%+ quota, zero opóźnień).
+  - **Premier Tier:** `gemini-4-argon` (najpotężniejszy model reasoningowy Google — aktywowany do zadań ciężkiej architektury, gdy resetuje się limit quota).
+- **ChatGPT Go Plan (OpenAI Codex):**
+  - Obsługuje `architect` (Tab 2) na modelu `gpt-6-luna` (reasoning effort: `medium`). Zarezerwowany dla kontraktów, dowodzenia spójności typów, bezpieczeństwa i adversarial fuzzingu.
+- **Brak Subskrypcji Anthropic (Claude Isolation):**
+  - Claude Code został całkowicie wycofany z aktywnych paneli i zastąpiony przez `reviewer` (Antigravity Gemini), aby wykluczyć przypadkowe opłaty API Usage Billing.
 - **Trwałość Konfiguracji:** Wszystkie klucze i routing modeli pozostają zabezpieczone w `~/.config/llm-keys.env` (`chmod 600`) i są automatycznie propagowane do nowych powłok.
+
+### 4. Zautomatyzowany Potok Inżynieryjny (Automated SWE Pipeline via `herdr-swarm`)
+
+Do uruchamiania wieloetapowych zadań inżynieryjnych używaj wbudowanego potoku:
+```bash
+herdr-swarm pipeline "<opis zadania inżynieryjnego>"
+```
+Przebieg 4-etapowego potoku:
+1. **Etap 1: Architektura (`architect` / Codex GPT-6-Luna):** Formułowanie sygnatur funkcji, interfejsów, kontraktów i przypadków brzegowych.
+2. **Etap 2: Implementacja (`builder` / OpenCode GLM-5.3-Flash Free):** Pisanie plików, modułów i implementacji na bazie wytycznych architekta.
+3. **Etap 3: Weryfikacja & Bramka Jakości (`sentinel` / Oh-My-Pi Nemotron):** Uruchomienie lokalnego runnera testów (`pytest`, `cargo test`, `npm test`) i sprawdzenie pokrycia.
+4. **Etap 4: Code Review & Bezpieczeństwo (`reviewer` / Antigravity Gemini):** Rygorystyczny audyt diffa pod kątem czystości, regresji i bezpieczeństwa.
+5. **Synteza & Commit (`coordinator`):** Ostateczna akceptacja diffa i zatwierdzenie w gicie.
+
+### 5. Izolacja Równoległa Git Worktree (`herdr worktree`)
+
+W przypadku równoległej pracy wielu agentów na jednym repozytorium, agenci tworzą izolowane kopie robocze, aby zapobiec blokadom `.git/index.lock`:
+```bash
+herdr-swarm worktree create --branch feat/nowy-modul
+herdr-swarm worktree list
+herdr-swarm worktree remove <branch>
+```
+
+### 6. Podręcznik Narzędzia `herdr-swarm`
+
+| Polecenie | Opis |
+| :--- | :--- |
+| `herdr-swarm status` | Czytelna tabela statusu na żywo wszystkich 9 agentów we wszystkich 3 zakładkach |
+| `herdr-swarm init` | Sprawdzenie obecności i weryfikacja zdrowia topologii całego roju |
+| `herdr-swarm prompt <agent> <tekst>` | Bezpośrednie wysłanie polecenia do agenta i oczekiwanie na odpowiedź |
+| `herdr-swarm focus <agent\|tab>` | Skok fokusu na wskazany panel agenta lub całą zakładkę |
+| `herdr-swarm zoom <agent\|pane>` | Przełączenie trybu pełnoekranowego (toggle fullscreen) dla panelu agenta |
+| `herdr-swarm broadcast "<tekst>"` | Równoległe rozesłanie zapytania do wszystkich agentów darmowego roju |
+| `herdr-swarm pipeline "<zadanie>"` | Uruchomienie pełnego 4-etapowego zautomatyzowanego potoku programistycznego |
+| `herdr-swarm worktree <akcja>` | Zarządzanie równoległymi drzewami roboczymi Git |
+
 
