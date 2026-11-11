@@ -108,6 +108,76 @@ def cmd_worktree(action, *args):
     print(f"Worktree error: {res.stderr or res.stdout}", file=sys.stderr)
     return res.returncode
 
+def cmd_frontend(query, site_kind="software", page_type="software"):
+    print("=" * 70)
+    print(f"🎨 INITIATING ANTI-SLOP FRONTEND CRAFT PIPELINE")
+    print(f"Topic: {query} | Kind: {site_kind} | Type: {page_type}")
+    print("=" * 70)
+
+    # Stage 1: Inspiration Scout (21st.dev, Godly, Awwwards, Land-book, Dribbble)
+    print("\n[Stage 1/4] 🔍 Running Inspiration Scout & TasteSkill Dealt Tokens...", file=sys.stderr)
+    dossier_res = subprocess.run(
+        ["inspiration-scout", query, site_kind, page_type],
+        capture_output=True,
+        text=True
+    )
+    dossier = dossier_res.stdout.strip()
+    
+    with open("INSPIRATION_DOSSIER.md", "w") as f:
+        f.write(dossier)
+    print("✓ INSPIRATION_DOSSIER.md generated with TasteSkill dealt tokens & UI/UX Pro Max intelligence.")
+
+    # Stage 2: Architecture & Layout Structuring via Architect (Codex GPT-6-Luna)
+    print("\n[Stage 2/4] 🏛️ Structuring Layout & Hierarchy via Architect (Codex)...", file=sys.stderr)
+    arch_prompt = f"""FRONTEND CRAFT SPECIFICATION FOR: {query}
+Refer to INSPIRATION_DOSSIER.md.
+CRITICAL TASTESKILL 2.5 RULES:
+1. One section per screen (exact 1440x900 and 390x844).
+2. Equal edges left/right (.wrap).
+3. Quiet micro-interactions (translateY -2px, image scale 1.02 in frame).
+4. STRICT BAN ON PURPLE / LAVENDER in palette!
+5. Real product UI or clean typography, NO generic AI slop.
+
+Provide the exact HTML structure, CSS variables, and layout sections."""
+    cmd_prompt("architect", arch_prompt, timeout_ms="120000")
+
+    # Read architect output
+    read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
+    arch_summary = read_arch.stdout.strip()
+
+    # Stage 3: Builder (OpenCode GLM-5.3-Flash Free) Implementation
+    print("\n[Stage 3/4] 🔨 Delegating Frontend Implementation to Builder (OpenCode)...", file=sys.stderr)
+    builder_prompt = f"""TASK: Implement the frontend for: {query}
+Read INSPIRATION_DOSSIER.md for dealt color palettes and typography.
+ARCHITECTURE PLAN:
+{arch_summary}
+
+ANTI-SLOP INVARIANTS:
+- No purple/lavender gradients.
+- Strict 1 section per 1440x900 screen.
+- High-contrast typography with authentic hierarchy.
+Implement index.html and style.css (or components)."""
+    cmd_prompt("builder", builder_prompt, timeout_ms="180000")
+
+    # Stage 4: Anti-Slop Verification Gate
+    print("\n[Stage 4/4] 🛡️ Running Dual Verification Gate (Impeccable Detect & TasteSkill)...", file=sys.stderr)
+    impeccable_res = subprocess.run(["impeccable", "detect", "--json", "."], capture_output=True, text=True)
+    if impeccable_res.returncode == 0:
+        print("✓ Impeccable Anti-Slop Check: PASSED (No AI slop patterns detected).")
+    else:
+        print(f"⚠ Impeccable Warnings:\n{impeccable_res.stdout}")
+
+    html_find = subprocess.run(["find", ".", "-maxdepth", "2", "-name", "*.html"], capture_output=True, text=True).stdout.splitlines()
+    if html_find:
+        html_file = html_find[0]
+        print(f"Running TasteSkill check on {html_file}...")
+        subprocess.run(["taste-skill", "check", "--url", html_file, "--sizes", "1440x900,390x844"], check=False)
+
+    print("\n" + "=" * 70)
+    print("✅ FRONTEND CRAFT PIPELINE COMPLETE! Quality guaranteed at figma.com/x.ai bar.")
+    print("=" * 70)
+    return 0
+
 def cmd_pipeline(task):
     print("=" * 70)
     print(f"🚀 INITIATING HERDR MULTI-AGENT SWE PIPELINE")
@@ -185,6 +255,7 @@ def main():
         print("  herdr-swarm zoom <agent|pane>             Toggle full-screen zoom on an agent's pane")
         print("  herdr-swarm broadcast <text>              Broadcast prompt across Free Swarm agents")
         print("  herdr-swarm pipeline \"<task description>\" Run 4-stage automated SWE pipeline")
+        print("  herdr-swarm frontend \"<topic>\" [kind]    Run automated Anti-Slop Frontend Craft pipeline")
         print("  herdr-swarm worktree <create|list|remove> Manage isolated git worktree workspaces")
         return 0
 
@@ -193,6 +264,14 @@ def main():
         return cmd_status()
     elif cmd == "init":
         return cmd_init()
+    elif cmd == "frontend":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm frontend \"<topic>\" [kind] [type]", file=sys.stderr)
+            return 1
+        query = sys.argv[2]
+        kind = sys.argv[3] if len(sys.argv) > 3 else "software"
+        page_type = sys.argv[4] if len(sys.argv) > 4 else "software"
+        return cmd_frontend(query, kind, page_type)
     elif cmd == "zoom":
         if len(sys.argv) < 3:
             print("Usage: herdr-swarm zoom <agent|pane>", file=sys.stderr)

@@ -46,6 +46,34 @@ Gdy środowisko działa wewnątrz terminala Herdr (`test "${HERDR_ENV:-}" = 1`):
 
 ---
 
+## 🛑 Żelazna Zasada Zakazu Generowania UI bez Etapu Inspiracji (Anti-AI-Slop Gate)
+
+Każde zadanie dotyczące interfejsu użytkownika (UI, HTML/CSS, React, frontend, strona WWW, landing page, portfolio, dashboard, komponenty, style) podlega **BEZWZGLĘDNEMU ZAKAZOWI natychmiastowego pisania kodu**!
+
+Pisanie kodu UI bez przejścia Etapu Inspiracji skutkuje generowaniem tzw. **AI-Slop** (tandetne fioletowe gradienty, losowe paddingi, brak hierarchii fontów, brak dyscypliny 1 ekranu, generyczne karty bento) — co stanowi **BŁĄD KRYTYCZNY PROJEKTOWY**!
+
+**OBOWIĄZKOWY 4-ETAPOWY PROTOKÓŁ FRONTEND CRAFT:**
+1. **Etap 1: Inspiration Scout (Baza Referencji przed KODEM):**
+   Przed napisaniem choćby jednej linii kodu UI, koordynator MUSI uruchomić `inspiration-scout "<temat>" [kind]` lub subagenta `inspiration-scout`, który przeszukuje 5 referencyjnych serwisów:
+   - `https://21st.dev/` (nowoczesne komponenty Tailwind/shadcn)
+   - `https://godly.design/` (mistrzowskie układy i rytm sekcji)
+   - `https://awwwards.com` (dyrekcja artystyczna i mikroruch)
+   - `https://land-book.com/` (struktura sekcji i narracja konwersji)
+   - `https://dribbble.com/` (detale wizualne i gęstość komponentów)
+2. **Etap 2: Dealt Tokens & Design System (TasteSkill 2.5 + UI/UX Pro Max):**
+   Wygeneruj wylosowane palety i fonty z `taste-skill deal-hero` oraz `uipro-search`.
+   - **Żelazne zasady TasteSkill:** 1 sekcja na 1 ekran (dokładnie 1440×900 i 390×844), równe krawędzie (`.wrap`), cichy hover (`translateY(-2px)`, zoom `1.02`), **CAŁKOWITY ZAKAZ FIOLETU/LAWENDY w palecie**!
+3. **Etap 3: Delegacja do Buildera ze Ścisłym Briefem Anty-Slop:**
+   Dopiero po zebraniu dossier koordynator przekazuje do `builder` (OpenCode) zadanie wraz z wylosowanymi tokenami, paletą i zasadami:
+   `herdr-swarm frontend "<temat>"` lub `herdr agent prompt builder "Zaimplementuj frontend wg INSPIRATION_DOSSIER.md... ZAKAZ FIOLETU..." --wait`
+4. **Etap 4: Podwójna Bramka Weryfikacji Anty-Slop:**
+   Po wygenerowaniu kodu koordynator lub sentinel URUCHAMIA:
+   - `impeccable detect --json <pliki>`
+   - `taste-skill check --url <plik>`
+   Jeśli wykryty zostanie jakikolwiek slop (np. `gradient-text`, `border-accent-on-rounded`, `ai-color-palette`), kod wraca do `builder` do natychmiastowej poprawy!
+
+---
+
 ## I. Algorytm 3 Pytań Filtrujących (Airtight Triage Engine)
 
 Before taking any action, classify the incoming prompt using this 3-question filter:
