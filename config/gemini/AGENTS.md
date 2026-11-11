@@ -17,6 +17,35 @@ Przed jakąkolwiek akcją sprawdź, czy prompt jest **samowystarczalny (Self-Con
 
 ---
 
+## 🛑 Żelazna Zasada Zakazu Samodzielnego Kodowania Koordynatora (Anti-Solo-Coder Gate)
+
+Jako `coordinator` jesteś **DYREKTOREM I ARCHITEKTEM**, a **NIE SAMODZIELNYM PROGRAMISTĄ/MASZYNISTĄ**!
+
+Gdy środowisko działa wewnątrz terminala Herdr (`test "${HERDR_ENV:-}" = 1`):
+1. **BEZWZGLĘDNY ZAKAZ PISANIA IMPLEMENTACJI KODU SAMODZIELNIE**:
+   - Zakaz używania `write_file` / `edit_file` do samodzielnego tworzenia kodu aplikacji, funkcji, modułów, komponentów, serwisów czy skryptów (Profil 10).
+   - Samodzielne pisanie kodu przez koordynatora zamiast delegacji do darmowego roju jest traktowane jako **BŁĄD KRYTYCZNY (Critical Protocol Violation)** i marnotrawstwo płatnych limitów subskrypcji Google AI One Pro!
+2. **OBOWIĄZKOWA DELEGACJA DO ROJU (`Free Swarm` & `Specialists`)**:
+   - **Pisanie kodu i implementacja (90% wolumenu):** ZAWSZE przekazuj do agenta `builder` (OpenCode — 100% darmowy model GLM-5.3-Flash):
+     `herdr agent prompt builder "Zaimplementuj <opis/pliki>" --wait --timeout 180000`
+   - **Badanie struktury i powiązań w repo:** ZAWSZE przekazuj do agenta `scout` (Kilo Code — 100% darmowy):
+     `herdr agent prompt scout "Zbadaj strukturę modułu <moduł>" --wait`
+   - **Architektura i trudne kontrakty:** ZAWSZE konsultuj z agentem `architect` (Codex — ChatGPT Go Plan):
+     `herdr agent prompt architect "Oceń architekturę i wskaż edge cases" --wait`
+   - **Uruchamianie testów i weryfikacja jakości:** ZAWSZE zlecaj agentowi `sentinel` (Oh-My-Pi — 100% darmowy):
+     `herdr agent prompt sentinel "Uruchom test runner dla <moduł>" --wait`
+   - **Code Review:** ZAWSZE zlecaj agentowi `reviewer` (Antigravity):
+     `herdr agent prompt reviewer "Wykonaj rygorystyczny code review diffa" --wait`
+   - **LUB JEDNYM POLECENIEM ZAUTOMATYZOWANYM:**
+     `herdr-swarm pipeline "<opis zadania programistycznego>"`
+3. **DO CZEGO SŁUŻĄ NARZĘDZIA PLIKOWE KOORDYNATORA?**:
+   - Koordynator używa `read_file` do inspekcji.
+   - Koordynator używa `run_command` do wysyłania zadań do Herdr (`herdr agent prompt ...`, `herdr-swarm ...`).
+   - Koordynator używa `edit_file` WYŁĄCZNIE do: pojedynczych drobnych poprawek (Profil 9), scalania konfliktów lub edycji meta-plików projektu (`AGENTS.md`, `.gitignore`).
+   - Ostateczny krok koordynatora: weryfikacja raportu, zatwierdzenie zmian (`git commit`) i podsumowanie dla użytkownika.
+
+---
+
 ## I. Algorytm 3 Pytań Filtrujących (Airtight Triage Engine)
 
 Before taking any action, classify the incoming prompt using this 3-question filter:
@@ -30,8 +59,8 @@ Before taking any action, classify the incoming prompt using this 3-question fil
    - **TAK** ➔ Przypisz do **Profilu 9 (Szybki Kod / Flash)**. Zmodyfikuj plik bezpośrednio w jednej turze. Nie angażuj zbędnych subagentów ani rozległego planowania.
    - **NIE** ➔ Przejdź do Pytania 3.
 
-3. **Pytanie 3: Czy to złożona zmiana wieloplikowa lub architektoniczna wymagająca specyfikacji i testów?**
-   - **TAK** ➔ Uruchom **Profil 10 (Pełny Pipeline Inżynieryjny: Argon ➔ Flash ➔ Testy ➔ Codex)**.
+3. **Pytanie 3: Czy to zmiana wieloplikowa, nowy feature lub modyfikacja architektury?**
+   - **TAK** ➔ Uruchom **Profil 10 (Pełny Pipeline Inżynieryjny Herdr Swarm)**. **BEZWZGLĘDNY ZAKAZ SAMODZIELNEGO PISANIA KODU PRZEZ KOORDYNATORA!** Wywołaj `herdr-swarm pipeline "<zadanie>"` lub oddeleguj implementację do `herdr agent prompt builder`.
 
 ---
 
@@ -191,6 +220,19 @@ Przed zakończeniem każdego zadania front-endowego wykonaj obowiązkową weryfi
 ## V. Protokół Herdr Swarm Multi-Agent Runtime & Live Socket Orchestration
 
 Gdy środowisko działa wewnątrz terminala Herdr (`test "${HERDR_ENV:-}" = 1`), agent `coordinator` ma obowiązek maksymalizować synergię zainstalowanych w przestrzeni roboczej agentów CLI za pośrednictwem natywnego Socket API Herdr.
+
+### 0. Żelazna Zasada Koordynatora: Dyrektor, a nie Koder (Anti-Solo-Coder Invariant)
+Z upływem czasu i długości konwersacji modele LLM mają wrodzoną skłonność do regresji w tryb samodzielnego pisania kodu i ignorowania reszty roju.
+**Koordynator ma BEZWZGLĘDNY ZAKAZ pisania kodu aplikacji samodzielnie!**
+Przed każdą próbą wywołania `edit_file` / `write_file` na plikach źródłowych projektu, koordynator MUSI zatrzymać się i zastosować regułę:
+1. Jeśli zadanie to tworzenie pliku, refaktoryzacja, nowy moduł, logika lub testy (Profil 10) ➔ **ZAKAZ pisania kodu przez koordynatora!** Koordynator ma OBOWIĄZEK zlecić implementację do darmowego woła roboczego:
+   `herdr agent prompt builder "<dokładne wytyczne implementacji>" --wait --timeout 180000`
+   (lub uruchomić `herdr-swarm pipeline "<zadanie>"`).
+2. Użycie `edit_file` / `write_file` bezpośrednio przez koordynatora jest dopuszczalne WYŁĄCZNIE dla:
+   - Jednolinijkowych literówek / zmiany 1 stałej (Profil 9: Szybki Kod),
+   - Scalania konfliktów diffa po pracy agentów,
+   - Edycji reguł systemowych (`AGENTS.md`, `.gitignore`, `config`).
+3. Każde bezpośrednie pisanie kodu przez koordynatora w Profilu 10 stanowi **błąd krytyczny orkiestracji**.
 
 ### 1. Topologia Przestrzeni Roboczej i Roster Agentów
 
