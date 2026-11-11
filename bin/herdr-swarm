@@ -84,6 +84,73 @@ def cmd_focus(target):
     print(f"Target [{target}] not found.", file=sys.stderr)
     return 1
 
+def cmd_zoom(target):
+    # Lookup agent to find its pane_id
+    data, err = run_herdr("agent", "get", target)
+    if err or not isinstance(data, dict):
+        # Fallback to direct pane id
+        pane_id = target
+    else:
+        pane_id = data.get("result", {}).get("agent", {}).get("pane_id", target)
+
+    res = subprocess.run(["herdr", "pane", "zoom", "--pane", pane_id, "--toggle"], capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"Toggled zoom for [{target}] (pane {pane_id}).")
+        return 0
+    print(f"Failed to toggle zoom for [{target}]: {res.stderr or res.stdout}", file=sys.stderr)
+    return 1
+
+def cmd_worktree(action, *args):
+    res = subprocess.run(["herdr", "worktree", action, *args], capture_output=True, text=True)
+    if res.returncode == 0:
+        print(res.stdout.strip())
+        return 0
+    print(f"Worktree error: {res.stderr or res.stdout}", file=sys.stderr)
+    return res.returncode
+
+def cmd_pipeline(task):
+    print("=" * 70)
+    print(f"🚀 INITIATING HERDR MULTI-AGENT SWE PIPELINE")
+    print(f"Task: {task}")
+    print("=" * 70)
+
+    # Stage 1: Architect (Codex GPT-6-Luna)
+    print("\n[Stage 1/4] 🏛️ Consulting Architect (Codex GPT-6-Luna) for Architecture & Contracts...", file=sys.stderr)
+    arch_prompt = f"TASK: {task}\n\nOutline the architectural interface contracts, function signatures, data types, and potential adversarial edge cases. Keep it concise, concrete, and directly implementable."
+    cmd_prompt("architect", arch_prompt, timeout_ms="120000")
+
+    # Read architect output
+    read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
+    arch_summary = read_arch.stdout.strip()
+
+    # Stage 2: Builder (OpenCode GLM-5.3-Flash Free)
+    print("\n[Stage 2/4] 🔨 Delegating Implementation to Builder (OpenCode GLM-5.3-Flash Free)...", file=sys.stderr)
+    builder_prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS FROM ARCHITECT:\n{arch_summary}\n\nPlease implement the necessary files, functions, and tests according to the architectural plan."
+    cmd_prompt("builder", builder_prompt, timeout_ms="180000")
+
+    # Stage 3: Sentinel (Oh-My-Pi Nemotron 3.5 Super VL)
+    print("\n[Stage 3/4] 🛡️ Running Quality Gate & Test Runner via Sentinel (Oh-My-Pi)...", file=sys.stderr)
+    sentinel_prompt = f"Run unit tests and analyze test coverage and syntax checks for task: {task}. Report exact test pass/fail counts."
+    cmd_prompt("sentinel", sentinel_prompt, timeout_ms="90000")
+
+    # Stage 4: Reviewer (Antigravity Gemini)
+    print("\n[Stage 4/4] 🔍 Performing Code Review & Security Audit via Reviewer (Antigravity Gemini)...", file=sys.stderr)
+    reviewer_prompt = f"Perform a strict code review and security audit for task: {task}. Check for edge cases, clean architecture, and security vulnerabilities."
+    cmd_prompt("reviewer", reviewer_prompt, timeout_ms="90000")
+
+    print("\n" + "=" * 70)
+    print("✅ HERDR SWE PIPELINE COMPLETE! Ready for Coordinator synthesis.")
+    print("=" * 70)
+    return 0
+
+def cmd_broadcast(prompt):
+    agents = ["builder", "scout", "analyst"]
+    print(f"Broadcasting to Free Swarm {agents}...", file=sys.stderr)
+    for a in agents:
+        subprocess.run(["herdr", "agent", "prompt", a, prompt], capture_output=True, text=True)
+    print("Prompts delivered. Use 'herdr-swarm status' to track progress.")
+    return 0
+
 def cmd_init():
     """Ensure the complete 3-tab 9-agent workspace topology is initialized."""
     print("Checking Herdr swarm topology...", file=sys.stderr)
@@ -111,10 +178,14 @@ def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
         print("Herdr Swarm CLI Helper\n")
         print("Usage:")
-        print("  herdr-swarm status                    Show live roster status table")
-        print("  herdr-swarm init                      Check and verify swarm topology")
-        print("  herdr-swarm prompt <agent> <text>     Send prompt to an agent and wait for output")
-        print("  herdr-swarm focus <agent|tab>         Focus target agent or tab")
+        print("  herdr-swarm status                        Show live roster status table")
+        print("  herdr-swarm init                          Check and verify swarm topology")
+        print("  herdr-swarm prompt <agent> <text>         Send prompt to an agent and wait for output")
+        print("  herdr-swarm focus <agent|tab>             Focus target agent or tab")
+        print("  herdr-swarm zoom <agent|pane>             Toggle full-screen zoom on an agent's pane")
+        print("  herdr-swarm broadcast <text>              Broadcast prompt across Free Swarm agents")
+        print("  herdr-swarm pipeline \"<task description>\" Run 4-stage automated SWE pipeline")
+        print("  herdr-swarm worktree <create|list|remove> Manage isolated git worktree workspaces")
         return 0
 
     cmd = sys.argv[1]
@@ -122,6 +193,26 @@ def main():
         return cmd_status()
     elif cmd == "init":
         return cmd_init()
+    elif cmd == "zoom":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm zoom <agent|pane>", file=sys.stderr)
+            return 1
+        return cmd_zoom(sys.argv[2])
+    elif cmd == "pipeline":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm pipeline \"<task description>\"", file=sys.stderr)
+            return 1
+        return cmd_pipeline(" ".join(sys.argv[2:]))
+    elif cmd == "broadcast":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm broadcast \"<text>\"", file=sys.stderr)
+            return 1
+        return cmd_broadcast(" ".join(sys.argv[2:]))
+    elif cmd == "worktree":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm worktree <create|list|remove> [args...]", file=sys.stderr)
+            return 1
+        return cmd_worktree(sys.argv[2], *sys.argv[3:])
     elif cmd == "prompt":
         if len(sys.argv) < 4:
             print("Usage: herdr-swarm prompt <agent> <text> [timeout_ms]", file=sys.stderr)
