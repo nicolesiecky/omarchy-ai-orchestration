@@ -18,7 +18,7 @@ echo -e "${BLUE}==>${NC} Installing Omarchy AI Orchestration setup..."
 echo -e "${BLUE}==>${NC} Installing binaries to ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
 cp -f "$SCRIPT_DIR"/bin/* "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable "$HOME/.local/bin"/uipro-search "$HOME/.local/bin"/taste-skill "$HOME/.local/bin"/inspiration-scout
+chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable "$HOME/.local/bin"/uipro-search "$HOME/.local/bin"/taste-skill "$HOME/.local/bin"/inspiration-scout "$HOME/.local/bin"/herdr-swarm
 
 # 2. Configure Omarchy defaults & menu
 echo -e "${BLUE}==>${NC} Configuring Omarchy defaults & menu..."
@@ -43,23 +43,27 @@ fi
 
 # 4. Install Universal Multi-Agent Orchestration Guidelines (AGENTS.md)
 echo -e "${BLUE}==>${NC} Installing AGENTS.md rules..."
-mkdir -p "$HOME/.gemini/config" "$HOME/.agents/rules" "$HOME/Work"
-cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.gemini/config/AGENTS.md"
-cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.gemini/GEMINI.md"
-cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/.agents/rules/orchestration.md"
-cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$HOME/Work/AGENTS.md"
+mkdir -p "$HOME/.gemini/config" "$HOME/.agents/rules" "$HOME/Work" 2>/dev/null || true
+if [[ -w "$HOME/.gemini/config" || -w "$HOME/.gemini/config/AGENTS.md" ]]; then
+  cat "$SCRIPT_DIR/config/gemini/AGENTS.md" > "$HOME/.gemini/config/AGENTS.md" 2>/dev/null || true
+fi
+if [[ -w "$HOME/.gemini" || -w "$HOME/.gemini/GEMINI.md" ]]; then
+  cat "$SCRIPT_DIR/config/gemini/AGENTS.md" > "$HOME/.gemini/GEMINI.md" 2>/dev/null || true
+fi
+cat "$SCRIPT_DIR/config/gemini/AGENTS.md" > "$HOME/.agents/rules/orchestration.md"
+cat "$SCRIPT_DIR/config/gemini/AGENTS.md" > "$HOME/Work/AGENTS.md"
 
 # Propagate AGENTS.md to all sub-repositories in ~/Work
 for d in "$HOME/Work"/*/; do
   if [[ -d "$d/.git" ]]; then
-    cp -f "$SCRIPT_DIR/config/gemini/AGENTS.md" "$d/AGENTS.md"
+    cat "$SCRIPT_DIR/config/gemini/AGENTS.md" > "$d/AGENTS.md"
   fi
 done
 
 # 5. Configure Antigravity MCP Servers (Figma, etc.)
 echo -e "${BLUE}==>${NC} Configuring Antigravity MCP servers..."
 MCP_CONFIG="$HOME/.gemini/config/mcp_config.json"
-if [[ -f "$SCRIPT_DIR/config/gemini/mcp_config.json" ]]; then
+if [[ -f "$SCRIPT_DIR/config/gemini/mcp_config.json" && ( -w "$MCP_CONFIG" || -w "$(dirname "$MCP_CONFIG")" ) ]]; then
   if [[ ! -f "$MCP_CONFIG" || ! -s "$MCP_CONFIG" ]]; then
     cp -f "$SCRIPT_DIR/config/gemini/mcp_config.json" "$MCP_CONFIG"
   elif command -v jq >/dev/null 2>&1; then
@@ -95,6 +99,17 @@ for root in "$HOME/.gemini/skills" "$HOME/.agents/skills" "$HOME/.claude/skills"
   [[ -d "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max" ]] && ln -sfn "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/ui-ux-pro-max" "$root/ui-ux-pro-max"
   for sub in ui-styling design-system brand banner-design slides; do
     [[ -d "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/$sub" ]] && ln -sfn "$AGENT_SKILLS_DIR/ui-ux-pro-max-skill/.claude/skills/$sub" "$root/$sub"
+  done
+done
+
+# Propagate all unified skills to all agent runtimes (Omp, Pi, Hermes, Claude)
+echo -e "${BLUE}==>${NC} Propagating unified skills across agent runtimes..."
+for skill_path in "$HOME/.agents/skills"/*; do
+  [[ -e "$skill_path" ]] || continue
+  skill_name="$(basename "$skill_path")"
+  for target_root in "$HOME/.omp/agent/skills" "$HOME/.pi/agent/skills" "$HOME/.hermes/skills" "$HOME/.claude/skills"; do
+    mkdir -p "$target_root"
+    ln -sfn "$skill_path" "$target_root/$skill_name"
   done
 done
 

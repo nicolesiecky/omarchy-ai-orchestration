@@ -1,0 +1,143 @@
+#!/usr/bin/env python3
+"""Herdr Swarm Management and Inter-Agent Dispatch CLI."""
+import sys
+import json
+import shutil
+import subprocess
+
+def run_herdr(*args):
+    res = subprocess.run(["herdr", *args], capture_output=True, text=True)
+    if res.returncode != 0:
+        return None, res.stderr or res.stdout
+    try:
+        return json.loads(res.stdout), None
+    except Exception:
+        return res.stdout, None
+
+def cmd_status():
+    data, err = run_herdr("agent", "list")
+    if err or not isinstance(data, dict):
+        print("Herdr server is not running or no agents active.", file=sys.stderr)
+        return 1
+
+    agents = data.get("result", {}).get("agents", [])
+    if not agents:
+        print("No active agents found in Herdr.")
+        return 0
+
+    print("┌────────────────┬─────────────┬──────────┬──────────────┬───────────────────────────┐")
+    print("│ Agent Name     │ CLI Engine  │ Tab      │ Pane ID      │ Live Status               │")
+    print("├────────────────┼─────────────┼──────────┼──────────────┼───────────────────────────┤")
+    for a in sorted(agents, key=lambda x: (x.get("tab_id", ""), x.get("name", ""))):
+        name = a.get("name") or a.get("agent", "unknown")
+        engine = a.get("agent", "unknown")
+        tab = a.get("tab_id", "")
+        pane = a.get("pane_id", "")
+        status = a.get("agent_status", "unknown")
+        
+        # Color coding for terminal
+        status_color = status
+        if status == "idle":
+            status_color = f"\033[32m● {status}\033[0m"
+        elif status == "working":
+            status_color = f"\033[33m⚡ {status}\033[0m"
+        elif status == "blocked":
+            status_color = f"\033[31m✋ {status}\033[0m"
+        elif status == "done":
+            status_color = f"\033[36m✓ {status}\033[0m"
+            
+        print(f"│ {name:<14} │ {engine:<11} │ {tab:<8} │ {pane:<12} │ {status_color:<34} │")
+    print("└────────────────┴─────────────┴──────────┴──────────────┴───────────────────────────┘")
+    return 0
+
+def cmd_prompt(target, prompt, timeout_ms="60000"):
+    print(f"Dispatching to [{target}]... (timeout: {int(timeout_ms)//1000}s)", file=sys.stderr)
+    res = subprocess.run(
+        ["herdr", "agent", "prompt", target, prompt, "--wait", "--timeout", str(timeout_ms)],
+        capture_output=True,
+        text=True
+    )
+    if res.returncode != 0:
+        print(f"Prompt failed: {res.stderr or res.stdout}", file=sys.stderr)
+        return res.returncode
+
+    # Read output
+    read_res = subprocess.run(
+        ["herdr", "agent", "read", target, "--source", "recent-unwrapped", "--lines", "120"],
+        capture_output=True,
+        text=True
+    )
+    print(read_res.stdout.strip())
+    return 0
+
+def cmd_focus(target):
+    # Try agent focus first
+    res = subprocess.run(["herdr", "agent", "focus", target], capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"Focused agent [{target}].")
+        return 0
+    # Try tab focus
+    res = subprocess.run(["herdr", "tab", "focus", target], capture_output=True, text=True)
+    if res.returncode == 0:
+        print(f"Focused tab [{target}].")
+        return 0
+    print(f"Target [{target}] not found.", file=sys.stderr)
+    return 1
+
+def cmd_init():
+    """Ensure the complete 3-tab 9-agent workspace topology is initialized."""
+    print("Checking Herdr swarm topology...", file=sys.stderr)
+    data, err = run_herdr("agent", "list")
+    if err or not isinstance(data, dict):
+        print("Herdr server is not running.", file=sys.stderr)
+        return 1
+        
+    agents = data.get("result", {}).get("agents", [])
+    active_names = {a.get("name") or a.get("agent"): a for a in agents}
+    
+    # Check if roster is already healthy
+    expected = ["builder", "scout", "analyst", "oracle", "architect", "strategist", "sentinel", "reviewer", "coordinator"]
+    missing = [name for name in expected if name not in active_names]
+    
+    if not missing:
+        print("Herdr Swarm is already fully initialized with all 9 agents active!\n")
+        return cmd_status()
+        
+    print(f"Active agents: {list(active_names.keys())}")
+    print(f"Missing agents from topology: {missing}")
+    return cmd_status()
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print("Herdr Swarm CLI Helper\n")
+        print("Usage:")
+        print("  herdr-swarm status                    Show live roster status table")
+        print("  herdr-swarm init                      Check and verify swarm topology")
+        print("  herdr-swarm prompt <agent> <text>     Send prompt to an agent and wait for output")
+        print("  herdr-swarm focus <agent|tab>         Focus target agent or tab")
+        return 0
+
+    cmd = sys.argv[1]
+    if cmd == "status":
+        return cmd_status()
+    elif cmd == "init":
+        return cmd_init()
+    elif cmd == "prompt":
+        if len(sys.argv) < 4:
+            print("Usage: herdr-swarm prompt <agent> <text> [timeout_ms]", file=sys.stderr)
+            return 1
+        target = sys.argv[2]
+        prompt = sys.argv[3]
+        timeout_ms = sys.argv[4] if len(sys.argv) > 4 else "60000"
+        return cmd_prompt(target, prompt, timeout_ms)
+    elif cmd == "focus":
+        if len(sys.argv) < 3:
+            print("Usage: herdr-swarm focus <agent|tab>", file=sys.stderr)
+            return 1
+        return cmd_focus(sys.argv[2])
+    else:
+        print(f"Unknown command: {cmd}", file=sys.stderr)
+        return 1
+
+if __name__ == "__main__":
+    sys.exit(main())

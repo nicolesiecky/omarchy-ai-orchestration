@@ -40,7 +40,22 @@ if [[ -z $agent ]]; then
   exit 1
 fi
 
-if [[ "$agent" == "antigravity" || "$agent" == "agy" ]]; then
+if [[ "$agent" == "herdr" ]]; then
+  [[ $PWD == "$HOME" && -d $HOME/Work ]] && cd "$HOME/Work"
+
+  if omarchy-cmd-missing "herdr"; then
+    echo "Herdr is not installed. Choose an installed agent with: omarchy default agent <name>" >&2
+    exit 1
+  fi
+
+  command=(herdr)
+
+  if [[ $inline == "true" ]]; then
+    exec "${command[@]}"
+  else
+    exec omarchy-launch-tui --app-id=org.omarchy.herdr "${command[@]}"
+  fi
+elif [[ "$agent" == "antigravity" || "$agent" == "agy" ]]; then
   [[ $PWD == "$HOME" && -d $HOME/Work ]] && cd "$HOME/Work"
 
   if omarchy-cmd-missing "agy" && omarchy-cmd-missing "antigravity"; then

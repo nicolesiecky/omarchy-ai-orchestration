@@ -1,9 +1,48 @@
 #!/usr/bin/env python3
-"""Run non-interactive queries against Codex with fallback."""
-import json
-import subprocess
+"""Run non-interactive queries against Codex with Herdr Swarm integration and fallback."""
+import os
 import sys
+import json
 import shutil
+import subprocess
+
+def try_herdr_agent(prompt: str) -> bool:
+    """Try querying the running 'architect' agent inside Herdr if available."""
+    if not shutil.which("herdr"):
+        return False
+    try:
+        check = subprocess.run(
+            ["herdr", "agent", "get", "architect"],
+            capture_output=True,
+            text=True,
+            timeout=3
+        )
+        if check.returncode != 0:
+            return False
+        data = json.loads(check.stdout)
+        status = data.get("result", {}).get("agent", {}).get("agent_status")
+        if status not in ("idle", "done"):
+            return False
+
+        res = subprocess.run(
+            ["herdr", "agent", "prompt", "architect", prompt, "--wait", "--timeout", "45000"],
+            capture_output=True,
+            text=True,
+            timeout=50
+        )
+        if res.returncode == 0:
+            read_res = subprocess.run(
+                ["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "100"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if read_res.stdout.strip():
+                print(read_res.stdout.strip())
+                return True
+    except Exception:
+        pass
+    return False
 
 def main():
     if len(sys.argv) < 2:
@@ -12,6 +51,11 @@ def main():
 
     prompt = " ".join(sys.argv[1:])
 
+    # 1. Try Herdr Swarm 'architect' if running in active workspace
+    if try_herdr_agent(prompt):
+        return 0
+
+    # 2. Direct Codex standalone binary execution
     codex_bin = shutil.which("codex")
     if codex_bin:
         try:
@@ -21,7 +65,6 @@ def main():
                 text=True,
                 timeout=30
             )
-            # Check for common quota / limit errors
             output = (res.stdout or "") + (res.stderr or "")
             if "usage limit" not in output.lower() and "error" not in output.lower() and res.returncode == 0:
                 print(res.stdout)
@@ -29,7 +72,7 @@ def main():
         except Exception:
             pass
 
-    # Fallback to agy (Flash) if Codex is unavailable or out of quota
+    # 3. Fallback to agy (Flash) if Codex is unavailable or out of quota
     agy_bin = shutil.which("agy")
     if agy_bin:
         try:

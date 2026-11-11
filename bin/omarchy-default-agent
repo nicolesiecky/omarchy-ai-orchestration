@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # omarchy:summary=Set and launch the default coding agent
-# omarchy:args=[pi|omp|opencode|claude|codex|grok|gemini|openclaw|hermes|copilot|crush|cursor-agent|muse|antigravity]
+# omarchy:args=[herdr|pi|omp|opencode|claude|codex|grok|gemini|openclaw|hermes|copilot|crush|cursor-agent|muse|antigravity]
 
 agent_file="$HOME/.config/omarchy/defaults/agent"
 
@@ -20,6 +20,17 @@ if [[ ${1:-} == "--install" ]]; then
 fi
 
 case "$1" in
+herdr)
+  agent="herdr"
+  mkdir -p "$(dirname "$agent_file")"
+  printf '%s\n' "$agent" >"$agent_file"
+  if [[ $installing == "true" ]]; then
+    printf '\033[2J\033[3J\033[H'
+    exec omarchy-agent --inline
+  else
+    exec omarchy-agent
+  fi
+  ;;
 antigravity | agy)
   agent="antigravity"
   mkdir -p "$(dirname "$agent_file")"

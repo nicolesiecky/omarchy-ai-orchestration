@@ -38,9 +38,54 @@ flowchart TD
    - Uruchamiany automatycznie jako subagent (`Model: 'pro'`) lub ręcznie (`/model`) do zadań architektonicznych i trudnych błędów.
    - Chroni swój dedykowany tygodniowy limit przed przypadkowym wyczerpaniem.
 3. **Fuzz-Tester & Ghost Reviewer: OpenAI Codex (GPT-6 Luna)**
-   - Odpytywany asynchronicznie w tle przez `~/.local/bin/codex-query`.
+   - Odpytywany asynchronicznie w tle przez `~/.local/bin/codex-query` (z automatycznym mostem do działającego agenta `architect` w Herdr).
    - Generuje przypadki brzegowe, testuje nietypowe dane i weryfikuje schematy JSON.
    - Posiada wbudowany **Auto-Fallback** na Gemini Flash w razie przekroczenia limitu API.
+
+---
+
+## 🐝 Herdr Swarm Multi-Agent Control Room (9 Agentów / 3 Zakładki)
+
+Środowisko terminalowe Herdr (`0.9.5`) stanowi centralną dyspozytornię multi-agentową. Cały system podzielony jest na 3 wyspecjalizowane zakładki, z których każda mieści dedykowane instancje agentów:
+
+```
+Tab 3: [Coordinator] (Alt+3) ◀ CENTRALNY PULPIT
+└── coordinator (Antigravity CLI) — Nadzór, triage, decyzje architektoniczne i merge
+
+Tab 1: [Free Swarm] (Alt+1) — RÓJ ZEROKOSZTOWY (100% FREE TIERS)
+├── builder   (OpenCode)  — Model: opencode/glm-5.3-flash-free (Główny wół roboczy)
+├── scout     (Kilo Code) — Model: kilo/kilo-auto/free (Recon kodu i zależności)
+└── analyst   (Pi)        — Model: nemotron-3.5-super-vl-120b-a12b (Szybka analiza)
+
+Tab 2: [Specialists] (Alt+2) — EKSPERCI & BRAMKI KONTROLNE
+├── oracle     (Hermes)     — Model: openrouter/free (Głębokie narzędzia i pamięć)
+├── architect  (Codex)      — Model: GPT-6-Luna (Fuzzing i kontrakty architektoniczne)
+├── strategist (Antigravity)— Model: Gemini 3.8 Flash (Asynchroniczne planowanie)
+├── sentinel   (Oh-My-Pi)   — Model: nemotron-3.5-super-vl-120b (Automatyczne testy)
+└── reviewer   (Claude)     — Model: Claude Code CLI (Audyt bezpieczeństwa i czystości)
+```
+
+### 📡 Standard Komunikacji Socketowej (`herdr-swarm`)
+
+Wszystkie agenty w rojowisku komunikują się asynchronicznie bez przełączania okien przez użytkownika:
+
+```bash
+# Sprawdzenie stanu roju:
+herdr-swarm status
+
+# Wysłanie zadania do konkretnego agenta:
+herdr-swarm prompt builder "Zaimplementuj parser CSV w src/parser.ts"
+herdr-swarm prompt architect "Oceń podatności w schemacie autoryzacji"
+herdr-swarm prompt sentinel "Uruchom testy jednostkowe i podaj raport"
+
+# Błyskawiczny skok do agenta lub zakładki:
+herdr-swarm focus architect
+herdr-swarm focus "Free Swarm"
+```
+
+### 💰 Zasada 90/10 (Ekonomia Tokenów)
+- **90%+ wolumenu kodu** (szablony, funkcje, testy, boilerplate) generują darmowe agenty z zakładki `Free Swarm`.
+- Płatne subskrypcje i limity (`architect` / Codex, `reviewer` / Claude) są chronione i uruchamiane wyłącznie do celowanych, zwięzłych weryfikacji.
 
 ---
 
@@ -59,7 +104,7 @@ Wszystkie zapytania są klasyfikowane w locie bez ingerencji użytkownika:
 | **7** | **Skrypty Ad-Hoc** | *„Daj jednolinijkowiec ffmpeg do kompresji wideo”* | Gotowy kod prosto w oknie czatu bez pętli deweloperskiej. |
 | **8** | **DevOps & CI/CD** | *„Napisz wieloetapowy Dockerfile pod Rusta”* | Walidacja syntaktyczna plików YAML / Docker. |
 | **9** | **Szybki Kod (Single-File)** | *„Zmień kolor przycisku w Button.tsx”* | Bezpośrednia edycja przez Flasha bez planowania. |
-| **10** | **Pełna Inżynieria (Heavy SWE)**| *„Zaimplementuj webhooki Stripe z testami i walidacją”*| Pełny potok: Argon (plan) ➔ Flash (kod) ➔ Testy ➔ Codex. |
+| **10** | **Pełna Inżynieria (Heavy SWE)**| *„Zaimplementuj webhooki Stripe z testami i walidacją”*| Rój Herdr: Coordinator ➔ Architect ➔ Builder ➔ Sentinel ➔ Reviewer. |
 | **11** | **Asystent & WebApps** | *„Napisz za mnie maila w Gmailu do szefa”* | Treść do schowka (`wl-copy`) + link compose w przeglądarce. |
 | **12** | **Multimedia & Wideo** | *„Wytnij pierwsze 30 sekund z nagrania.mp4”* | Narzędziowe wywołanie `ffmpeg` / `yt-dlp` / `magick`. |
 | **13** | **Sprzęt & Peryferia** | *„Sprawdź temperaturę GPU i stan baterii”* | Diagnostyka peryferiów (`nvidia-smi`, `upower`, `hyprctl`). |
@@ -161,7 +206,8 @@ omarchy-ai-orchestration/
 │   ├── omarchy-default-agent                 # Zarządzanie domyślnym agentem (obsługa antigravity)
 │   ├── omarchy-agent-usage-antigravity       # Natywny kolektor statystyk i limitów na żywo
 │   ├── omarchy-agent-usage-update            # Runner zbierający dane do ~/.local/state/omarchy/
-│   ├── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem
+│   ├── codex-query                           # Asynchroniczny most do Codexa z auto-fallbackiem i wsparciem Herdr
+│   ├── herdr-swarm                           # Dyspozytor i monitor roju agentów w terminalu Herdr
 │   ├── impeccable                            # Globalny wrapper do silnika craftu i detektora UI
 │   ├── taste-skill                           # CLI dispatcher do TasteSkill 2.5 (deal, check, shoot)
 │   ├── uipro-search                          # CLI wyszukiwarka bazy UI/UX Pro Max (80 stylów, 192 palety)
