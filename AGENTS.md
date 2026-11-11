@@ -88,7 +88,7 @@ Before taking any action, classify the incoming prompt using this 3-question fil
      `herdr agent prompt sentinel "Uruchom testy i przeanalizuj pokrycie w <moduł>" --wait`
   4. **Fuzzing & Adversarial Edge Cases (`architect` / Codex):** Generowanie złośliwych przypadków brzegowych przez Codex:
      `herdr agent prompt architect "Wygeneruj złośliwe przypadki brzegowe i scenariusze awarii dla <kod>" --wait`
-  5. **Przegląd Jakości (`reviewer` / Claude):** Ostateczny szlif stylistyczny, spójność i audyt bezpieczeństwa:
+  5. **Przegląd Jakości (`reviewer` / Antigravity Gemini):** Ostateczny szlif stylistyczny, spójność i audyt bezpieczeństwa w oparciu o subskrypcję Google AI One Pro:
      `herdr agent prompt reviewer "Wykonaj rygorystyczny code review diffa" --wait`
   6. **Akceptacja & Commit (`coordinator`):** Ostateczny przegląd diffa w dedykowanej konsoli Coordinator (Tab 3), raport dla użytkownika i commit.
 
@@ -207,7 +207,7 @@ Przestrzeń Herdr zorganizowana jest w 3 wyspecjalizowane zakładki:
   - `architect` (Codex CLI — model `gpt-6-luna`, effort `medium`): Dogłębna analiza architektury, wykrywanie luk logicznych, złośliwy fuzzing i testy brzegowe.
   - `strategist` (Antigravity CLI — model `gemini-3.8-flash`): Druga, niezależna perspektywa planistyczna, asynchroniczna ewaluacja strategii.
   - `sentinel` (Oh-My-Pi — model `nemotron-3.5-super-vl-120b-a12b`): Rygorystyczny strażnik jakości, automatyczne testy i walidacja prewalk.
-  - `reviewer` (Claude Code CLI): Ostateczna krytyka kodu, audyt czystości i bezpieczeństwa.
+  - `reviewer` (Antigravity CLI — model `gemini-3.8-flash` / `gemini-4-argon` via Google AI One Pro): Ostateczna krytyka kodu, audyt czystości i bezpieczeństwa.
 
 ### 2. Standard Komunikacji Między-Agentowej (Socket API Dispatch)
 
@@ -238,6 +238,6 @@ Wszystkie interakcje między agentami odbywają się programowo bez koniecznośc
 ### 3. Strategia Ekonomii Tokenów (Zero-Cost Maximization)
 
 - **Zasada 90/10:** Co najmniej 90% surowego wolumenu kodu (szablony, implementacje funkcji, testy jednostkowe, boilerplate) kieruj do darmowych agentów z zakładki `Free Swarm` (`builder`, `scout`, `analyst`).
-- **Oszczędzanie Subskrypcji:** Modele płatne lub limitowane (`architect` / Codex, `reviewer` / Claude) angażuj wyłącznie do celowanych, zwięzłych zadań krytycznych (fuzzing, audyt bezpieczeństwa, trudny bug architektoniczny).
+- **Oszczędzanie Subskrypcji:** Modele płatne lub limitowane (`architect` / Codex GPT-6-Luna, `coordinator` / `reviewer` / Gemini AI One Pro) angażuj do celowanych zadań krytycznych (architektura, fuzzing, audyt bezpieczeństwa, ostateczny code review).
 - **Trwałość Konfiguracji:** Wszystkie klucze i routing modeli pozostają zabezpieczone w `~/.config/llm-keys.env` (`chmod 600`) i są automatycznie propagowane do nowych powłok.
 
