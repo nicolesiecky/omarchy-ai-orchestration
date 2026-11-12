@@ -18,7 +18,7 @@ echo -e "${BLUE}==>${NC} Installing Omarchy AI Orchestration setup..."
 echo -e "${BLUE}==>${NC} Installing binaries to ~/.local/bin/..."
 mkdir -p "$HOME/.local/bin"
 cp -f "$SCRIPT_DIR"/bin/* "$HOME/.local/bin/"
-chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable "$HOME/.local/bin"/uipro-search "$HOME/.local/bin"/taste-skill "$HOME/.local/bin"/inspiration-scout "$HOME/.local/bin"/herdr-swarm
+chmod +x "$HOME/.local/bin"/omarchy* "$HOME/.local/bin"/codex-query "$HOME/.local/bin"/impeccable "$HOME/.local/bin"/uipro-search "$HOME/.local/bin"/taste-skill "$HOME/.local/bin"/inspiration-scout "$HOME/.local/bin"/herdr-swarm "$HOME/.local/bin"/stageshow
 
 # 2. Configure Omarchy defaults & menu
 echo -e "${BLUE}==>${NC} Configuring Omarchy defaults & menu..."

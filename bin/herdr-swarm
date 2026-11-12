@@ -1,313 +1,464 @@
 #!/usr/bin/env python3
-"""Herdr Swarm Management and Inter-Agent Dispatch CLI."""
-import sys
+"""Safe, workspace-aware orchestration CLI for Herdr agents."""
+from __future__ import annotations
+
+import argparse
 import json
+import os
 import shutil
 import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any, Iterable
 
-def run_herdr(*args):
-    res = subprocess.run(["herdr", *args], capture_output=True, text=True)
-    if res.returncode != 0:
-        return None, res.stderr or res.stdout
+DEFAULT_TIMEOUT = 30
+MAX_TIMEOUT = 3600
+JSON_MODE = False
+
+
+class CommandFailure(Exception):
+    def __init__(self, code: str, message: str, *, details: Any = None, exit_code: int = 1):
+        super().__init__(message)
+        self.code, self.message, self.details, self.exit_code = code, message, details, exit_code
+
+
+def emit(ok: bool, command: str, *, result: Any = None, error: CommandFailure | None = None) -> int:
+    if JSON_MODE:
+        payload: dict[str, Any] = {"ok": ok, "command": command}
+        if ok:
+            payload["result"] = result
+        elif error:
+            payload["error"] = {"code": error.code, "message": error.message}
+            if error.details is not None:
+                payload["error"]["details"] = error.details
+        print(json.dumps(payload, ensure_ascii=False))
+    elif ok:
+        if isinstance(result, str):
+            print(result)
+        elif result is not None:
+            print(json.dumps(result, ensure_ascii=False, indent=2))
+    elif error:
+        print(f"Error [{error.code}]: {error.message}", file=sys.stderr)
+        if error.details:
+            print(str(error.details), file=sys.stderr)
+    return 0 if ok else (error.exit_code if error else 1)
+
+
+def bounded_run(args: Iterable[str], timeout: float = DEFAULT_TIMEOUT, *, check: bool = False,
+                cwd: str | None = None, input_text: str | None = None) -> subprocess.CompletedProcess[str]:
+    """Run a subprocess with a hard timeout and normalized failures."""
+    argv = list(args)
     try:
-        return json.loads(res.stdout), None
-    except Exception:
-        return res.stdout, None
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=max(1, min(float(timeout), MAX_TIMEOUT)), cwd=cwd, input=input_text)
+    except subprocess.TimeoutExpired as exc:
+        output = exc.stdout or ""
+        if isinstance(output, bytes):
+            output = output.decode(errors="replace")
+        raise CommandFailure("timeout", f"Command timed out after {timeout}s: {argv[0]}", details=output or None, exit_code=124) from exc
+    except FileNotFoundError as exc:
+        raise CommandFailure("not_found", f"Required executable not found: {argv[0]}", details=str(exc), exit_code=127) from exc
+    except OSError as exc:
+        raise CommandFailure("os_error", f"Could not run {argv[0]}", details=str(exc), exit_code=126) from exc
+    if check and result.returncode:
+        raise CommandFailure("subprocess_failed", f"Command exited with status {result.returncode}: {argv[0]}", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+    return result
 
-def cmd_status():
-    data, err = run_herdr("agent", "list")
-    if err or not isinstance(data, dict):
-        print("Herdr server is not running or no agents active.", file=sys.stderr)
-        return 1
 
-    agents = data.get("result", {}).get("agents", [])
-    if not agents:
-        print("No active agents found in Herdr.")
+def herdr_json(*args: str, timeout: float = DEFAULT_TIMEOUT) -> Any:
+    result = bounded_run(["herdr", *args], timeout)
+    if result.returncode:
+        raise CommandFailure("herdr_failed", f"herdr {' '.join(args)} failed ({result.returncode})", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+    raw = result.stdout.strip()
+    if not raw:
+        return ""
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        return raw
+
+
+def output_text(value: Any) -> str:
+    if isinstance(value, str):
+        return value.strip()
+    return json.dumps(value, ensure_ascii=False) if value is not None else ""
+
+
+def get_agents(timeout: float = DEFAULT_TIMEOUT) -> list[dict[str, Any]]:
+    data = herdr_json("agent", "list", timeout=timeout)
+    if isinstance(data, dict):
+        agents = data.get("result", {}).get("agents", [])
+        if isinstance(agents, list):
+            return [a for a in agents if isinstance(a, dict)]
+    raise CommandFailure("invalid_response", "herdr agent list returned an unexpected response", details=data)
+
+
+def current_workspace(agents: list[dict[str, Any]]) -> str | None:
+    explicit = os.environ.get("HERDR_WORKSPACE") or os.environ.get("HERDR_WORKSPACE_ID")
+    if explicit:
+        return explicit
+    try:
+        current = herdr_json("workspace", "current", "--json", timeout=5)
+        if isinstance(current, dict):
+            info = current.get("result", current)
+            if isinstance(info, dict):
+                workspace = info.get("workspace_id") or info.get("id") or info.get("name")
+                if workspace:
+                    return str(workspace)
+    except CommandFailure:
+        pass
+    cwd = str(Path.cwd().resolve())
+    candidates: list[tuple[int, str]] = []
+    for agent in agents:
+        workspace = agent.get("workspace_id") or agent.get("workspace")
+        root = agent.get("workspace_path") or agent.get("workspace_root") or agent.get("cwd")
+        if workspace and root:
+            try:
+                root_resolved = str(Path(root).resolve())
+                if cwd == root_resolved or cwd.startswith(root_resolved + os.sep):
+                    candidates.append((len(root_resolved), str(workspace)))
+            except (OSError, TypeError):
+                continue
+    if candidates:
+        return max(candidates)[1]
+    ids = [str(a.get("workspace_id")) for a in agents if a.get("workspace_id")]
+    return ids[0] if ids and len(set(ids)) == 1 else None
+
+
+def filter_workspace(agents: list[dict[str, Any]], workspace: str | None) -> list[dict[str, Any]]:
+    if workspace is None:
+        return agents
+    return [a for a in agents if str(a.get("workspace_id") or a.get("workspace") or "") == workspace]
+
+
+def find_agent(data: Any) -> dict[str, Any] | None:
+    if not isinstance(data, dict):
+        return None
+    result = data.get("result", data)
+    if isinstance(result, dict):
+        agent = result.get("agent", result)
+        return agent if isinstance(agent, dict) else None
+    return None
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    try:
+        agents = get_agents()
+        workspace = args.workspace or current_workspace(agents)
+        if workspace is None and len({str(a.get("workspace_id") or a.get("workspace") or "") for a in agents}) > 1:
+            raise CommandFailure("workspace_ambiguous", "Could not determine the current workspace; pass --workspace to avoid cross-workspace results")
+        scoped = filter_workspace(agents, workspace)
+        rows = [{"name": a.get("name") or a.get("agent") or "unknown", "engine": a.get("agent", "unknown"),
+                 "workspace_id": a.get("workspace_id", ""), "tab_id": a.get("tab_id", ""),
+                 "pane_id": a.get("pane_id", ""), "status": a.get("agent_status", a.get("status", "unknown"))}
+                for a in sorted(scoped, key=lambda x: (str(x.get("tab_id", "")), str(x.get("name", ""))))]
+        if JSON_MODE:
+            return emit(True, "status", result={"workspace": workspace, "agents": rows})
+        if not rows:
+            return emit(True, "status", result="No active agents found in the selected workspace.")
+        print(f"Workspace: {workspace or 'all (workspace unavailable)'}")
+        print(f"{'Name':<18} {'Engine':<15} {'Tab':<10} {'Pane':<12} Status")
+        for row in rows:
+            print(f"{row['name']:<18} {row['engine']:<15} {row['tab_id']:<10} {row['pane_id']:<12} {row['status']}")
         return 0
+    except CommandFailure as exc:
+        return emit(False, "status", error=exc)
 
-    print("┌────────────────┬─────────────┬──────────┬──────────────┬───────────────────────────┐")
-    print("│ Agent Name     │ CLI Engine  │ Tab      │ Pane ID      │ Live Status               │")
-    print("├────────────────┼─────────────┼──────────┼──────────────┼───────────────────────────┤")
-    for a in sorted(agents, key=lambda x: (x.get("tab_id", ""), x.get("name", ""))):
-        name = a.get("name") or a.get("agent", "unknown")
-        engine = a.get("agent", "unknown")
-        tab = a.get("tab_id", "")
-        pane = a.get("pane_id", "")
-        status = a.get("agent_status", "unknown")
-        
-        # Color coding for terminal
-        status_color = status
-        if status == "idle":
-            status_color = f"\033[32m● {status}\033[0m"
-        elif status == "working":
-            status_color = f"\033[33m⚡ {status}\033[0m"
-        elif status == "blocked":
-            status_color = f"\033[31m✋ {status}\033[0m"
-        elif status == "done":
-            status_color = f"\033[36m✓ {status}\033[0m"
-            
-        print(f"│ {name:<14} │ {engine:<11} │ {tab:<8} │ {pane:<12} │ {status_color:<34} │")
-    print("└────────────────┴─────────────┴──────────┴──────────────┴───────────────────────────┘")
-    return 0
 
-def cmd_prompt(target, prompt, timeout_ms="60000"):
-    print(f"Dispatching to [{target}]... (timeout: {int(timeout_ms)//1000}s)", file=sys.stderr)
-    res = subprocess.run(
-        ["herdr", "agent", "prompt", target, prompt, "--wait", "--timeout", str(timeout_ms)],
-        capture_output=True,
-        text=True
-    )
-    if res.returncode != 0:
-        print(f"Prompt failed: {res.stderr or res.stdout}", file=sys.stderr)
-        return res.returncode
+def preflight_agent(target: str, timeout: float) -> dict[str, Any]:
+    data = herdr_json("agent", "get", target, timeout=timeout)
+    agent = find_agent(data)
+    if not agent:
+        raise CommandFailure("agent_not_found", f"Could not resolve Herdr agent: {target}", details=data)
+    agents = get_agents(timeout)
+    workspaces = {str(a.get("workspace_id") or a.get("workspace") or "") for a in agents}
+    workspace = current_workspace(agents)
+    if workspace is None and len(workspaces - {""}) > 1:
+        raise CommandFailure("workspace_ambiguous", f"Could not determine current workspace before targeting {target}; set HERDR_WORKSPACE")
+    agent_workspace = agent.get("workspace_id") or agent.get("workspace")
+    if workspace and agent_workspace and str(agent_workspace) != workspace:
+        raise CommandFailure("workspace_mismatch", f"Agent {target} resolved outside the current workspace", details={"current": workspace, "agent_workspace": agent_workspace})
+    matches = [a for a in filter_workspace(agents, workspace) if target in {str(a.get("name", "")), str(a.get("agent", "")), str(a.get("pane_id", ""))}]
+    if workspace and not matches:
+        raise CommandFailure("agent_not_in_workspace", f"Agent {target} is not present in workspace {workspace}")
+    if len(matches) > 1:
+        raise CommandFailure("agent_ambiguous", f"Agent target {target} is ambiguous in workspace {workspace}")
+    return agent
 
-    # Read output
-    read_res = subprocess.run(
-        ["herdr", "agent", "read", target, "--source", "recent-unwrapped", "--lines", "120"],
-        capture_output=True,
-        text=True
-    )
-    print(read_res.stdout.strip())
-    return 0
 
-def cmd_focus(target):
-    # Try agent focus first
-    res = subprocess.run(["herdr", "agent", "focus", target], capture_output=True, text=True)
-    if res.returncode == 0:
-        print(f"Focused agent [{target}].")
-        return 0
-    # Try tab focus
-    res = subprocess.run(["herdr", "tab", "focus", target], capture_output=True, text=True)
-    if res.returncode == 0:
-        print(f"Focused tab [{target}].")
-        return 0
-    print(f"Target [{target}] not found.", file=sys.stderr)
-    return 1
+def wait_agent_idle(target: str, timeout: float, until: str = "idle") -> str:
+    result = bounded_run(["herdr", "agent", "wait", target, "--until", until, "--timeout", str(int(timeout * 1000))], timeout + 2)
+    if result.returncode:
+        raise CommandFailure("wait_failed", f"Waiting for {target} failed ({result.returncode})", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+    return result.stdout.strip()
 
-def cmd_zoom(target):
-    # Lookup agent to find its pane_id
-    data, err = run_herdr("agent", "get", target)
-    if err or not isinstance(data, dict):
-        # Fallback to direct pane id
-        pane_id = target
-    else:
-        pane_id = data.get("result", {}).get("agent", {}).get("pane_id", target)
 
-    res = subprocess.run(["herdr", "pane", "zoom", "--pane", pane_id, "--toggle"], capture_output=True, text=True)
-    if res.returncode == 0:
-        print(f"Toggled zoom for [{target}] (pane {pane_id}).")
-        return 0
-    print(f"Failed to toggle zoom for [{target}]: {res.stderr or res.stdout}", file=sys.stderr)
-    return 1
+def cmd_prompt(args: argparse.Namespace) -> int:
+    target, timeout = args.agent, args.timeout
+    try:
+        agent = preflight_agent(target, min(timeout, 30))
+        status = str(agent.get("agent_status", agent.get("status", "unknown"))).lower()
+        if status not in {"idle", "done"}:
+            wait_agent_idle(target, timeout, "idle")
+        command = ["herdr", "agent", "prompt", target, args.prompt_text]
+        if args.wait:
+            command.extend(["--wait", "--timeout", str(int(timeout * 1000))])
+        dispatched = bounded_run(command, timeout + 5)
+        if dispatched.returncode:
+            raise CommandFailure("prompt_failed", f"Prompt dispatch failed ({dispatched.returncode})", details=(dispatched.stderr or dispatched.stdout).strip(), exit_code=dispatched.returncode)
+        response = dispatched.stdout.strip()
+        if args.wait:
+            read = bounded_run(["herdr", "agent", "read", target, "--source", "recent-unwrapped", "--lines", "120"], min(timeout, 60))
+            if read.returncode:
+                raise CommandFailure("read_failed", f"Prompt ran but reading its output failed ({read.returncode})", details=(read.stderr or read.stdout).strip(), exit_code=read.returncode)
+            response = read.stdout.strip() or response
+            if not response:
+                raise CommandFailure("empty_output", f"Agent {target} returned no output")
+        return emit(True, "prompt", result={"agent": target, "status": "dispatched", "output": response})
+    except CommandFailure as exc:
+        return emit(False, "prompt", error=exc)
 
-def cmd_worktree(action, *args):
-    res = subprocess.run(["herdr", "worktree", action, *args], capture_output=True, text=True)
-    if res.returncode == 0:
-        print(res.stdout.strip())
-        return 0
-    print(f"Worktree error: {res.stderr or res.stdout}", file=sys.stderr)
-    return res.returncode
 
-def cmd_frontend(query, site_kind="software", page_type="software"):
-    print("=" * 70)
-    print(f"🎨 INITIATING ANTI-SLOP FRONTEND CRAFT PIPELINE")
-    print(f"Topic: {query} | Kind: {site_kind} | Type: {page_type}")
-    print("=" * 70)
+def cmd_read(args: argparse.Namespace) -> int:
+    try:
+        result = bounded_run(["herdr", "agent", "read", args.agent, "--source", args.source, "--lines", str(args.lines)], DEFAULT_TIMEOUT)
+        if result.returncode:
+            raise CommandFailure("read_failed", f"Reading {args.agent} failed ({result.returncode})", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+        return emit(True, "read", result={"agent": args.agent, "source": args.source, "output": result.stdout.strip()})
+    except CommandFailure as exc:
+        return emit(False, "read", error=exc)
 
-    # Stage 1: Inspiration Scout (21st.dev, Godly, Awwwards, Land-book, Dribbble)
-    print("\n[Stage 1/4] 🔍 Running Inspiration Scout & TasteSkill Dealt Tokens...", file=sys.stderr)
-    dossier_res = subprocess.run(
-        ["inspiration-scout", query, site_kind, page_type],
-        capture_output=True,
-        text=True
-    )
-    dossier = dossier_res.stdout.strip()
-    
-    with open("INSPIRATION_DOSSIER.md", "w") as f:
-        f.write(dossier)
-    print("✓ INSPIRATION_DOSSIER.md generated with TasteSkill dealt tokens & UI/UX Pro Max intelligence.")
 
-    # Stage 2: Architecture & Layout Structuring via Architect (Codex GPT-6-Luna)
-    print("\n[Stage 2/4] 🏛️ Structuring Layout & Hierarchy via Architect (Codex)...", file=sys.stderr)
-    arch_prompt = f"""FRONTEND CRAFT SPECIFICATION FOR: {query}
-Refer to INSPIRATION_DOSSIER.md.
-CRITICAL TASTESKILL 2.5 RULES:
-1. One section per screen (exact 1440x900 and 390x844).
-2. Equal edges left/right (.wrap).
-3. Quiet micro-interactions (translateY -2px, image scale 1.02 in frame).
-4. STRICT BAN ON PURPLE / LAVENDER in palette!
-5. Real product UI or clean typography, NO generic AI slop.
+def cmd_wait(args: argparse.Namespace) -> int:
+    try:
+        output = wait_agent_idle(args.agent, args.timeout, args.until)
+        return emit(True, "wait", result={"agent": args.agent, "until": args.until, "output": output})
+    except CommandFailure as exc:
+        return emit(False, "wait", error=exc)
 
-Provide the exact HTML structure, CSS variables, and layout sections."""
-    cmd_prompt("architect", arch_prompt, timeout_ms="120000")
 
-    # Read architect output
-    read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
-    arch_summary = read_arch.stdout.strip()
+def simple_herdr(command: str, argv: list[str], *, timeout: float = DEFAULT_TIMEOUT, fallback: list[str] | None = None) -> int:
+    try:
+        result = bounded_run(["herdr", *argv], timeout)
+        if result.returncode and fallback:
+            result = bounded_run(["herdr", *fallback], timeout)
+        if result.returncode:
+            raise CommandFailure("herdr_failed", result.stderr.strip() or result.stdout.strip() or f"herdr command exited {result.returncode}", exit_code=result.returncode)
+        return emit(True, command, result=result.stdout.strip() or {"ok": True})
+    except CommandFailure as exc:
+        return emit(False, command, error=exc)
 
-    # Stage 3: Builder (Codex GPT-6-Luna) Implementation
-    print("\n[Stage 3/4] 🔨 Delegating Frontend Implementation to Builder (Codex GPT-6-Luna)...", file=sys.stderr)
-    builder_prompt = f"""TASK: Implement the frontend for: {query}
-Read INSPIRATION_DOSSIER.md for dealt color palettes and typography.
-ARCHITECTURE PLAN:
-{arch_summary}
 
-ANTI-SLOP INVARIANTS:
-- No purple/lavender gradients.
-- Strict 1 section per 1440x900 screen.
-- High-contrast typography with authentic hierarchy.
-Implement index.html and style.css (or components)."""
-    cmd_prompt("builder", builder_prompt, timeout_ms="180000")
+def cmd_interrupt(args: argparse.Namespace) -> int:
+    return simple_herdr("interrupt", ["agent", "interrupt", args.agent])
 
-    # Stage 4: Anti-Slop Verification Gate
-    print("\n[Stage 4/4] 🛡️ Running Dual Verification Gate (Impeccable Detect & TasteSkill)...", file=sys.stderr)
-    impeccable_res = subprocess.run(["impeccable", "detect", "--json", "."], capture_output=True, text=True)
-    if impeccable_res.returncode == 0:
-        print("✓ Impeccable Anti-Slop Check: PASSED (No AI slop patterns detected).")
-    else:
-        print(f"⚠ Impeccable Warnings:\n{impeccable_res.stdout}")
 
-    html_find = subprocess.run(["find", ".", "-maxdepth", "2", "-name", "*.html"], capture_output=True, text=True).stdout.splitlines()
-    if html_find:
-        html_file = html_find[0]
-        print(f"Running TasteSkill check on {html_file}...")
-        subprocess.run(["taste-skill", "check", "--url", html_file, "--sizes", "1440x900,390x844"], check=False)
+def cmd_focus(args: argparse.Namespace) -> int:
+    target = args.agent_or_tab
+    return simple_herdr("focus", ["agent", "focus", target], fallback=["tab", "focus", target])
 
-    print("\n" + "=" * 70)
-    print("✅ FRONTEND CRAFT PIPELINE COMPLETE! Quality guaranteed at figma.com/x.ai bar.")
-    print("=" * 70)
-    return 0
 
-def cmd_pipeline(task):
-    print("=" * 70)
-    print(f"🚀 INITIATING HERDR MULTI-AGENT SWE PIPELINE")
-    print(f"Task: {task}")
-    print("=" * 70)
+def cmd_zoom(args: argparse.Namespace) -> int:
+    target = args.agent_or_pane
+    try:
+        data = herdr_json("agent", "get", target)
+        agent = find_agent(data)
+        pane = str((agent or {}).get("pane_id") or target)
+        return simple_herdr("zoom", ["pane", "zoom", "--pane", pane, "--toggle"])
+    except CommandFailure as exc:
+        return emit(False, "zoom", error=exc)
 
-    # Stage 1: Architect (Codex GPT-6-Luna)
-    print("\n[Stage 1/4] 🏛️ Consulting Architect (Codex GPT-6-Luna) for Architecture & Contracts...", file=sys.stderr)
-    arch_prompt = f"TASK: {task}\n\nOutline the architectural interface contracts, function signatures, data types, and potential adversarial edge cases. Keep it concise, concrete, and directly implementable."
-    cmd_prompt("architect", arch_prompt, timeout_ms="120000")
 
-    # Read architect output
-    read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
-    arch_summary = read_arch.stdout.strip()
-
-    # Stage 2: Builder (Codex GPT-6-Luna)
-    print("\n[Stage 2/4] 🔨 Delegating Implementation to Builder (Codex GPT-6-Luna)...", file=sys.stderr)
-    builder_prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS FROM ARCHITECT:\n{arch_summary}\n\nPlease implement the necessary files, functions, and tests according to the architectural plan."
-    cmd_prompt("builder", builder_prompt, timeout_ms="180000")
-
-    # Stage 3: Sentinel (Oh-My-Pi Nemotron 3.5 Super VL)
-    print("\n[Stage 3/4] 🛡️ Running Quality Gate & Test Runner via Sentinel (Oh-My-Pi)...", file=sys.stderr)
-    sentinel_prompt = f"Run unit tests and analyze test coverage and syntax checks for task: {task}. Report exact test pass/fail counts."
-    cmd_prompt("sentinel", sentinel_prompt, timeout_ms="90000")
-
-    # Stage 4: Reviewer (Antigravity Gemini 4 Argon / Gemini 3.8 Flash)
-    print("\n[Stage 4/4] 🔍 Performing Code Review & Security Audit via Reviewer (Antigravity Gemini)...", file=sys.stderr)
-    reviewer_prompt = f"Perform a strict code review and security audit for task: {task}. Check for edge cases, clean architecture, and security vulnerabilities."
-    cmd_prompt("reviewer", reviewer_prompt, timeout_ms="90000")
-
-    print("\n" + "=" * 70)
-    print("✅ HERDR SWE PIPELINE COMPLETE! Ready for Coordinator synthesis.")
-    print("=" * 70)
-    return 0
-
-def cmd_broadcast(prompt):
+def cmd_broadcast(args: argparse.Namespace) -> int:
     agents = ["builder", "scout", "analyst"]
-    print(f"Broadcasting to Free Swarm {agents}...", file=sys.stderr)
-    for a in agents:
-        subprocess.run(["herdr", "agent", "prompt", a, prompt], capture_output=True, text=True)
-    print("Prompts delivered. Use 'herdr-swarm status' to track progress.")
-    return 0
+    failures: list[dict[str, Any]] = []
+    delivered: list[str] = []
+    for agent in agents:
+        try:
+            result = bounded_run(["herdr", "agent", "prompt", agent, args.text], args.timeout)
+            if result.returncode:
+                failures.append({"agent": agent, "exit_code": result.returncode, "message": (result.stderr or result.stdout).strip()})
+            else:
+                delivered.append(agent)
+        except CommandFailure as exc:
+            failures.append({"agent": agent, "code": exc.code, "message": exc.message})
+    data = {"delivered": delivered, "failures": failures}
+    if failures:
+        return emit(False, "broadcast", error=CommandFailure("partial_failure", "Broadcast failed for one or more agents", details=data))
+    return emit(True, "broadcast", result=data)
 
-def cmd_init():
-    """Ensure the complete 3-tab 9-agent workspace topology is initialized."""
-    print("Checking Herdr swarm topology...", file=sys.stderr)
-    data, err = run_herdr("agent", "list")
-    if err or not isinstance(data, dict):
-        print("Herdr server is not running.", file=sys.stderr)
-        return 1
-        
-    agents = data.get("result", {}).get("agents", [])
-    active_names = {a.get("name") or a.get("agent"): a for a in agents}
-    
-    # Check if roster is already healthy
-    expected = ["builder", "scout", "analyst", "oracle", "architect", "strategist", "sentinel", "reviewer", "coordinator"]
-    missing = [name for name in expected if name not in active_names]
-    
-    if not missing:
-        print("Herdr Swarm is already fully initialized with all 9 agents active!\n")
-        return cmd_status()
-        
-    print(f"Active agents: {list(active_names.keys())}")
-    print(f"Missing agents from topology: {missing}")
-    return cmd_status()
 
-def main():
-    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
-        print("Herdr Swarm CLI Helper\n")
-        print("Usage:")
-        print("  herdr-swarm status                        Show live roster status table")
-        print("  herdr-swarm init                          Check and verify swarm topology")
-        print("  herdr-swarm prompt <agent> <text>         Send prompt to an agent and wait for output")
-        print("  herdr-swarm focus <agent|tab>             Focus target agent or tab")
-        print("  herdr-swarm zoom <agent|pane>             Toggle full-screen zoom on an agent's pane")
-        print("  herdr-swarm broadcast <text>              Broadcast prompt across Free Swarm agents")
-        print("  herdr-swarm pipeline \"<task description>\" Run 4-stage automated SWE pipeline")
-        print("  herdr-swarm frontend \"<topic>\" [kind]    Run automated Anti-Slop Frontend Craft pipeline")
-        print("  herdr-swarm worktree <create|list|remove> Manage isolated git worktree workspaces")
-        return 0
+def prompt_and_read(agent: str, prompt: str, timeout: float, *, require_output: bool = True) -> str:
+    ns = argparse.Namespace(agent=agent, prompt_text=prompt, timeout=timeout, wait=True)
+    # Keep stage behavior centralized in cmd_prompt and preserve its error code.
+    try:
+        state = preflight_agent(agent, min(timeout, 30))
+        if str(state.get("agent_status", state.get("status", "unknown"))).lower() not in {"idle", "done"}:
+            wait_agent_idle(agent, timeout, "idle")
+        sent = bounded_run(["herdr", "agent", "prompt", agent, prompt, "--wait", "--timeout", str(int(timeout * 1000))], timeout + 5)
+        if sent.returncode:
+            raise CommandFailure("prompt_failed", f"{agent} stage failed ({sent.returncode})", details=(sent.stderr or sent.stdout).strip(), exit_code=sent.returncode)
+        read = bounded_run(["herdr", "agent", "read", agent, "--source", "recent-unwrapped", "--lines", "120"], min(timeout, 60))
+        if read.returncode:
+            raise CommandFailure("read_failed", f"Could not read {agent} output", details=(read.stderr or read.stdout).strip(), exit_code=read.returncode)
+        output = read.stdout.strip() or sent.stdout.strip()
+        if require_output and not output:
+            raise CommandFailure("empty_output", f"{agent} returned empty output")
+        return output
+    except CommandFailure:
+        raise
 
-    cmd = sys.argv[1]
-    if cmd == "status":
-        return cmd_status()
-    elif cmd == "init":
-        return cmd_init()
-    elif cmd == "frontend":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm frontend \"<topic>\" [kind] [type]", file=sys.stderr)
-            return 1
-        query = sys.argv[2]
-        kind = sys.argv[3] if len(sys.argv) > 3 else "software"
-        page_type = sys.argv[4] if len(sys.argv) > 4 else "software"
-        return cmd_frontend(query, kind, page_type)
-    elif cmd == "zoom":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm zoom <agent|pane>", file=sys.stderr)
-            return 1
-        return cmd_zoom(sys.argv[2])
-    elif cmd == "pipeline":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm pipeline \"<task description>\"", file=sys.stderr)
-            return 1
-        return cmd_pipeline(" ".join(sys.argv[2:]))
-    elif cmd == "broadcast":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm broadcast \"<text>\"", file=sys.stderr)
-            return 1
-        return cmd_broadcast(" ".join(sys.argv[2:]))
-    elif cmd == "worktree":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm worktree <create|list|remove> [args...]", file=sys.stderr)
-            return 1
-        return cmd_worktree(sys.argv[2], *sys.argv[3:])
-    elif cmd == "prompt":
-        if len(sys.argv) < 4:
-            print("Usage: herdr-swarm prompt <agent> <text> [timeout_ms]", file=sys.stderr)
-            return 1
-        target = sys.argv[2]
-        prompt = sys.argv[3]
-        timeout_ms = sys.argv[4] if len(sys.argv) > 4 else "60000"
-        return cmd_prompt(target, prompt, timeout_ms)
-    elif cmd == "focus":
-        if len(sys.argv) < 3:
-            print("Usage: herdr-swarm focus <agent|tab>", file=sys.stderr)
-            return 1
-        return cmd_focus(sys.argv[2])
-    else:
-        print(f"Unknown command: {cmd}", file=sys.stderr)
-        return 1
+
+def cmd_pipeline(args: argparse.Namespace) -> int:
+    task, timeout = args.task, args.timeout
+    stages = [
+        ("architect", f"TASK: {task}\n\nOutline architectural contracts, interfaces, data types and adversarial edge cases. Return concise actionable guidance."),
+        ("builder", None),
+        ("sentinel", f"Run unit tests and syntax checks for this task: {task}. Report exact pass/fail counts and failures."),
+        ("reviewer", f"Perform a strict code and security review of the implementation for: {task}. Report findings and verdict."),
+    ]
+    outputs: dict[str, str] = {}
+    for index, (agent, prompt) in enumerate(stages, 1):
+        if agent == "builder":
+            arch = outputs.get("architect", "").strip()
+            if not arch:
+                return emit(False, "pipeline", error=CommandFailure("empty_architecture", "Architect output is required before builder stage"))
+            prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS:\n{arch}\n\nImplement the required changes and tests."
+        print(f"[Stage {index}/{len(stages)}] {agent}", file=sys.stderr)
+        try:
+            outputs[agent] = prompt_and_read(agent, prompt or "", timeout)
+        except CommandFailure as exc:
+            return emit(False, "pipeline", error=CommandFailure(f"stage_{agent}_{exc.code}", f"Pipeline stopped at {agent}: {exc.message}", details=exc.details, exit_code=exc.exit_code))
+    return emit(True, "pipeline", result={"stages": outputs, "completed": list(outputs)})
+
+
+def require_tool(name: str) -> str:
+    path = shutil.which(name)
+    if not path:
+        raise CommandFailure("tool_missing", f"Required frontend verification tool is missing: {name}")
+    return path
+
+
+def cmd_frontend(args: argparse.Namespace) -> int:
+    topic, timeout = args.topic, args.timeout
+    kind, page_type = args.kind, args.type
+    try:
+        scout = bounded_run(["inspiration-scout", topic, kind, page_type], timeout)
+        if scout.returncode:
+            raise CommandFailure("scout_failed", "Inspiration scout failed", details=(scout.stderr or scout.stdout).strip(), exit_code=scout.returncode)
+        dossier = scout.stdout.strip()
+        if not dossier:
+            raise CommandFailure("empty_dossier", "Inspiration scout returned empty output")
+        dossier_path = Path("INSPIRATION_DOSSIER.md").resolve()
+        dossier_path.write_text(dossier + "\n", encoding="utf-8")
+        arch = prompt_and_read("architect", f"Frontend topic: {topic}\nRead {dossier_path}. Return a concrete implementation plan with layout, design tokens and responsive behavior.", timeout)
+        build = prompt_and_read("builder", f"Implement frontend for {topic}. Use dossier at {dossier_path} and this plan:\n{arch}\nFollow responsive and accessibility constraints.", timeout)
+        impeccable = require_tool("impeccable")
+        taste = require_tool("taste-skill")
+        detect = bounded_run([impeccable, "detect", "--json", "."], timeout)
+        if detect.returncode:
+            raise CommandFailure("impeccable_failed", "Impeccable verification failed; frontend pipeline stopped", details=(detect.stderr or detect.stdout).strip(), exit_code=detect.returncode)
+        files = bounded_run(["find", ".", "-maxdepth", "3", "-type", "f", "-name", "*.html", "-print"], timeout)
+        if files.returncode:
+            raise CommandFailure("discovery_failed", "Could not locate HTML for TasteSkill", details=(files.stderr or files.stdout).strip(), exit_code=files.returncode)
+        html_files = [line.strip() for line in files.stdout.splitlines() if line.strip()]
+        if not html_files:
+            raise CommandFailure("html_missing", "TasteSkill verification requires at least one HTML file")
+        taste_result = bounded_run([taste, "check", "--url", html_files[0], "--sizes", "1440x900,390x844"], timeout)
+        if taste_result.returncode:
+            raise CommandFailure("taste_skill_failed", "TasteSkill verification failed; frontend pipeline stopped", details=(taste_result.stderr or taste_result.stdout).strip(), exit_code=taste_result.returncode)
+        return emit(True, "frontend", result={"dossier": str(dossier_path), "architect": arch, "builder": build, "impeccable": detect.stdout.strip(), "taste_skill": taste_result.stdout.strip()})
+    except (CommandFailure, OSError) as exc:
+        if not isinstance(exc, CommandFailure):
+            exc = CommandFailure("io_error", "Could not write/read frontend dossier", details=str(exc))
+        return emit(False, "frontend", error=exc)
+
+
+def cmd_stageshow(args: argparse.Namespace) -> int:
+    try:
+        result = bounded_run(["stageshow", "film", args.topic_or_scenario, "--gate"], args.timeout)
+        if result.returncode:
+            raise CommandFailure("stageshow_failed", "Stageshow rehearsal gate failed", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+        return emit(True, "stageshow", result=result.stdout.strip())
+    except CommandFailure as exc:
+        return emit(False, "stageshow", error=exc)
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    try:
+        agents = get_agents()
+        if args.fix:
+            for agent in agents:
+                name = agent.get("name")
+                tab, pane = str(agent.get("tab_id", "")), str(agent.get("pane_id", ""))
+                is_coordinator_pane = (tab == "w2" and pane == "p1") or pane == "w2:p1"
+                if (not name or str(name).lower() in {"unknown", "unnamed"}) and is_coordinator_pane:
+                    rename = bounded_run(["herdr", "agent", "rename", "w2:p1", "coordinator"], 20)
+                    if rename.returncode:
+                        raise CommandFailure("topology_fix_failed", "Could not name w2:p1 coordinator", details=(rename.stderr or rename.stdout).strip(), exit_code=rename.returncode)
+                    agent["name"] = "coordinator"
+                    break
+        workspace = current_workspace(agents)
+        if workspace is None and len({str(a.get("workspace_id") or a.get("workspace") or "") for a in agents}) > 1:
+            raise CommandFailure("workspace_ambiguous", "Could not determine the current workspace; set HERDR_WORKSPACE")
+        scoped = filter_workspace(agents, workspace)
+        return emit(True, "init", result={"workspace": workspace, "fixed": bool(args.fix), "agents": scoped})
+    except CommandFailure as exc:
+        return emit(False, "init", error=exc)
+
+
+def cmd_worktree(args: argparse.Namespace) -> int:
+    try:
+        result = bounded_run(["herdr", "worktree", args.action, *args.args], args.timeout)
+        if result.returncode:
+            raise CommandFailure("worktree_failed", f"Worktree {args.action} failed ({result.returncode})", details=(result.stderr or result.stdout).strip(), exit_code=result.returncode)
+        return emit(True, "worktree", result=result.stdout.strip())
+    except CommandFailure as exc:
+        return emit(False, "worktree", error=exc)
+
+
+def add_json(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument("--json", action="store_true", help="emit a structured JSON result")
+
+
+def positive_timeout(value: str) -> float:
+    try:
+        parsed = float(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("timeout must be a number of seconds") from exc
+    if parsed <= 0 or parsed > MAX_TIMEOUT:
+        raise argparse.ArgumentTypeError(f"timeout must be between 0 and {MAX_TIMEOUT} seconds")
+    return parsed
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="herdr-swarm", description="Workspace-aware Herdr agent orchestration")
+    sub = parser.add_subparsers(dest="command", required=True)
+    p = sub.add_parser("status", help="show active agents"); p.add_argument("--workspace"); add_json(p); p.set_defaults(func=cmd_status)
+    p = sub.add_parser("prompt", help="send a prompt to an agent"); p.add_argument("agent"); p.add_argument("prompt_text"); p.add_argument("--wait", action="store_true"); p.add_argument("--timeout", type=positive_timeout, default=60); add_json(p); p.set_defaults(func=cmd_prompt)
+    p = sub.add_parser("read", help="read agent output"); p.add_argument("agent"); p.add_argument("--source", default="recent-unwrapped"); p.add_argument("--lines", type=int, default=50); add_json(p); p.set_defaults(func=cmd_read)
+    p = sub.add_parser("wait", help="wait for an agent state"); p.add_argument("agent"); p.add_argument("--until", choices=("idle", "done"), default="idle"); p.add_argument("--timeout", type=positive_timeout, default=60); add_json(p); p.set_defaults(func=cmd_wait)
+    p = sub.add_parser("interrupt", help="interrupt an agent"); p.add_argument("agent"); add_json(p); p.set_defaults(func=cmd_interrupt)
+    p = sub.add_parser("focus", help="focus an agent or tab"); p.add_argument("agent_or_tab"); add_json(p); p.set_defaults(func=cmd_focus)
+    p = sub.add_parser("zoom", help="toggle zoom for an agent or pane"); p.add_argument("agent_or_pane"); add_json(p); p.set_defaults(func=cmd_zoom)
+    p = sub.add_parser("broadcast", help="send a prompt to the default agent group"); p.add_argument("text"); p.add_argument("--timeout", type=positive_timeout, default=60); add_json(p); p.set_defaults(func=cmd_broadcast)
+    p = sub.add_parser("pipeline", help="run the guarded SWE pipeline"); p.add_argument("task"); p.add_argument("--timeout", type=positive_timeout, default=180); add_json(p); p.set_defaults(func=cmd_pipeline)
+    p = sub.add_parser("frontend", help="run the guarded frontend pipeline"); p.add_argument("topic"); p.add_argument("kind", nargs="?", default="software"); p.add_argument("type", nargs="?", default="software"); p.add_argument("--timeout", type=positive_timeout, default=180); add_json(p); p.set_defaults(func=cmd_frontend)
+    p = sub.add_parser("stageshow", help="run the Stageshow gate"); p.add_argument("topic_or_scenario"); p.add_argument("--timeout", type=positive_timeout, default=120); add_json(p); p.set_defaults(func=cmd_stageshow)
+    p = sub.add_parser("init", help="inspect and optionally heal the topology"); p.add_argument("--fix", action="store_true"); add_json(p); p.set_defaults(func=cmd_init)
+    p = sub.add_parser("worktree", help="manage Herdr worktrees"); p.add_argument("action", choices=("create", "list", "remove")); p.add_argument("args", nargs="*"); p.add_argument("--timeout", type=positive_timeout, default=60); add_json(p); p.set_defaults(func=cmd_worktree)
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    global JSON_MODE
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    JSON_MODE = bool(getattr(args, "json", False))
+    if getattr(args, "lines", 1) < 1:
+        parser.error("--lines must be at least 1")
+    return int(args.func(args))
+
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

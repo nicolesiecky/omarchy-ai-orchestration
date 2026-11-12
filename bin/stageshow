@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Stageshow CLI Runner
+set -euo pipefail
+STAGESHOW_DIR="/home/noly/.local/share/agent-skills/benjitaylor-skills/stageshow"
+
+case "${1:-}" in
+  film)
+    shift
+    node "$STAGESHOW_DIR/scripts/film.mjs" "$@"
+    ;;
+  dev)
+    shift
+    cd "$STAGESHOW_DIR" && node scripts/dev.mjs "$@"
+    ;;
+  layout)
+    shift
+    node "$STAGESHOW_DIR/scripts/layout.mjs" "$@"
+    ;;
+  dir|path)
+    echo "$STAGESHOW_DIR"
+    ;;
+  examples)
+    ls -1 "$STAGESHOW_DIR/examples"
+    ;;
+  *)
+    echo "Stageshow CLI (Benji Taylor)"
+    echo "Usage: stageshow <film|dev|layout|path|examples> [args...]"
+    echo ""
+    echo "Commands:"
+    echo "  film <url> [flags...]   Capture contact sheet, run gate checks & detect jumps/framing faults"
+    echo "  dev                     Launch the Stageshow Vite preview playground"
+    echo "  layout <url>            Check layout fit of ordinary host controls"
+    echo "  path                    Print absolute path to the Stageshow skill root"
+    echo "  examples                List available gold and spec examples"
+    ;;
+esac
