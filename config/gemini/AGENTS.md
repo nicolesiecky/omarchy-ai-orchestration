@@ -205,8 +205,8 @@ Przed zaprojektowaniem architektury UI lub napisaniem kodu, **ZAWSZE** uruchom s
 
 Subagent zwraca **Inspiration Dossier** jako punkt wyjścia dla **Design Architecta** (`design-architect`).
 
-### 2. Synergia 3 Silników Designu (`Impeccable` + `TasteSkill 2.5` + `UI/UX Pro Max`)
-Architekt Designu łączy wszystkie 3 zainstalowane skille w jeden spójny system:
+### 2. Kwartet Frontend & Design Craft (`Impeccable` + `TasteSkill 2.5` + `UI/UX Pro Max` + `Stageshow`)
+Architekt Designu łączy 4 filary w jeden bezkompromisowy system:
 - **A. `ui-ux-pro-max` (`~/.local/bin/uipro-search`) — Inteligencja UX, Palety, Style & Stack**:
   - Wywołaj `uipro-search "<zapytanie>" --design-system --variance <1-10> --motion <1-10> --density <1-10>` (oraz `--persist -p "<Projekt>" --output-dir "<root>"` dla `design-system/<slug>/MASTER.md`).
   - Korzystaj z 80 stylów UI, 192 palet produktowych, 74 parowań czcionek, 119 reguł UX (priorytety 1–10: kontrast WCAG 4.5:1, touch targets 44×44px, CLS < 0.1, focus rings) i wytycznych dla 22 stacków (`--stack react|nextjs|astro|shadcn|html-tailwind|threejs`).
@@ -221,7 +221,17 @@ Architekt Designu łączy wszystkie 3 zainstalowane skille w jeden spójny syste
     6. Prawdziwe zasoby wizualne: autentyczne zdjęcia, prawdziwe UI produktu jako żywy HTML w `app-frame`, pełnokolorowe ikony marek (`taste-skill icons`), pulsujące diagramy SVG; efekty shaderowe/WebGL wyłącznie na stronach `software`, `gaming`, `tech`.
     7. Konkretny, rzeczowy copywriting (60–80 słów na ekran poza mockami UI, rzeczownik w każdym nagłówku, czasownik + dopełnienie w przyciskach).
     8. **Całkowity zakaz fioletu/lawendy** w palecie strony.
-- **C. `impeccable` (`v4.8.0` — `~/.local/bin/impeccable`) — Surface Modes, Craft Floor & Komendy Szlifujące**:
+- **C. `stageshow` (`v1.1.1` — Benji Taylor — `~/.local/bin/stageshow`) — Faux Product UI, Bento Hero & Cursor Walkthroughs**:
+  - Tworzenie hiper-realistycznych makiet produktów (Faux Product UI), okien aplikacji, telefonów, powiadomień, siatek bento i animacji z wędrującym kursorem w stylu Linear, Stripe czy SpaceX (`stageshow examples`).
+  - **Dyscyplina 7 kroków**:
+    1. *Medium & place*: rozmiar 720×340 (hero z copy), 900–1100 (full-width), 400×300 (karty).
+    2. *Look*: mapowanie tokenów, wierność (`minimal`, `standard`, `realistic`), brak sztucznych wireframe'ów.
+    3. *Story*: 3–5 beatów i payoff (10–16s loop). Każdy ruch kursora ma logiczną przyczynę.
+    4. *Gold starting point*: kopiuj najbliższy z 60+ złotych szablonów z `stageshow examples` (`hero-demo`, `dark-hero`, `bento`, `payout-flow`, `ai-chat`, `static-card`).
+    5. *Restraint*: ścisły budżet słów (tylko 3 do 7 realnych stringów, reszta to `Bar` filler).
+    6. *Choreograph*: API `Act`, płynny morphing, spójne przejścia (`Fly`, `Bubble`).
+    7. *Rehearse*: samokrytyka za pomocą `stageshow film <url> --gate` – wykrywanie zacięć, driftu i błędów kadrowania.
+- **D. `impeccable` (`v4.8.0` — `~/.local/bin/impeccable`) — Surface Modes, Craft Floor & Komendy Szlifujące**:
   - Dobierz tryb powierzchni (**Mode**): `Persuade` (landing/marketing), `Operate` (dashboard/aplikacja), `Read` (dokumentacja/artykuł), `Experience` (portfolio/showcase).
   - Przestrzegaj `reference/craft-floor.md` oraz `PRODUCT.md` / `DESIGN.md`.
   - Używaj natywnych skilli: `/shape`, `/init`, `/document`, `/critique`, `/audit`, `/polish`, `/bolder`, `/quieter`, `/distill`, `/harden`, `/animate`, `/typeset`, `/layout`, `/overdrive`.
@@ -230,7 +240,7 @@ Architekt Designu łączy wszystkie 3 zainstalowane skille w jeden spójny syste
 - **Figma MCP (`https://mcp.figma.com/mcp`)**: Pobieraj strukturę węzłów, zmienne i auto-layout (`get_design_context`, `get_screenshot`) lub eksportuj komponenty do Figmy.
 - **Higgsfield MCP (`https://mcp.higgsfield.ai/mcp`)**: Wykorzystuj serwer `Higgsfield` do generowania wideo AI, sekwencji ruchu, teł filmowych oraz renderów wizualnych do sekcji Hero i showcase'ów.
 
-### 4. Podwójna Deterministyczna Bramka Walidacyjna (Dual Verification Gate)
+### 4. Potrójna Deterministyczna Bramka Walidacyjna (Triple Verification Gate)
 Przed zakończeniem każdego zadania front-endowego wykonaj obowiązkową weryfikację:
 1. **Skaner Anty-Slop Impeccable**:
    ```bash
@@ -243,6 +253,11 @@ Przed zakończeniem każdego zadania front-endowego wykonaj obowiązkową weryfi
    taste-skill check --url <plik-html-lub-url> --sizes 1440x900,1024x768,820x1180,768x1024,390x844
    ```
    *(Wszystkie błędy layoutu, krawędzi i responsywności muszą zostać naprawione przed oddaniem pracy).*
+3. **Rehearsal Gate & Film Scanner Stageshow (dla komponentów makiety / animacji kursora)**:
+   ```bash
+   stageshow film <url> --gate
+   ```
+   *(Wymusza zero skoków `jump:`, brak błędów kadrowania `framing:`, brak obciętych kontrolek `cut by the crop:` i status `rehearsal passed`).*
 
 ---
 
