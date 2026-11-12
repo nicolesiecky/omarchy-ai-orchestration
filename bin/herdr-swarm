@@ -145,8 +145,8 @@ Provide the exact HTML structure, CSS variables, and layout sections."""
     read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
     arch_summary = read_arch.stdout.strip()
 
-    # Stage 3: Builder (OpenCode GLM-5.3-Flash Free) Implementation
-    print("\n[Stage 3/4] 🔨 Delegating Frontend Implementation to Builder (OpenCode)...", file=sys.stderr)
+    # Stage 3: Builder (Codex GPT-6-Luna) Implementation
+    print("\n[Stage 3/4] 🔨 Delegating Frontend Implementation to Builder (Codex GPT-6-Luna)...", file=sys.stderr)
     builder_prompt = f"""TASK: Implement the frontend for: {query}
 Read INSPIRATION_DOSSIER.md for dealt color palettes and typography.
 ARCHITECTURE PLAN:
@@ -193,8 +193,8 @@ def cmd_pipeline(task):
     read_arch = subprocess.run(["herdr", "agent", "read", "architect", "--source", "recent-unwrapped", "--lines", "60"], capture_output=True, text=True)
     arch_summary = read_arch.stdout.strip()
 
-    # Stage 2: Builder (OpenCode GLM-5.3-Flash Free)
-    print("\n[Stage 2/4] 🔨 Delegating Implementation to Builder (OpenCode GLM-5.3-Flash Free)...", file=sys.stderr)
+    # Stage 2: Builder (Codex GPT-6-Luna)
+    print("\n[Stage 2/4] 🔨 Delegating Implementation to Builder (Codex GPT-6-Luna)...", file=sys.stderr)
     builder_prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS FROM ARCHITECT:\n{arch_summary}\n\nPlease implement the necessary files, functions, and tests according to the architectural plan."
     cmd_prompt("builder", builder_prompt, timeout_ms="180000")
 
@@ -203,7 +203,7 @@ def cmd_pipeline(task):
     sentinel_prompt = f"Run unit tests and analyze test coverage and syntax checks for task: {task}. Report exact test pass/fail counts."
     cmd_prompt("sentinel", sentinel_prompt, timeout_ms="90000")
 
-    # Stage 4: Reviewer (Antigravity Gemini)
+    # Stage 4: Reviewer (Antigravity Gemini 4 Argon / Gemini 3.8 Flash)
     print("\n[Stage 4/4] 🔍 Performing Code Review & Security Audit via Reviewer (Antigravity Gemini)...", file=sys.stderr)
     reviewer_prompt = f"Perform a strict code review and security audit for task: {task}. Check for edge cases, clean architecture, and security vulnerabilities."
     cmd_prompt("reviewer", reviewer_prompt, timeout_ms="90000")

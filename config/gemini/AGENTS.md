@@ -25,19 +25,20 @@ Gdy środowisko działa wewnątrz terminala Herdr (`test "${HERDR_ENV:-}" = 1`):
 1. **BEZWZGLĘDNY ZAKAZ PISANIA IMPLEMENTACJI KODU SAMODZIELNIE**:
    - Zakaz używania `write_file` / `edit_file` do samodzielnego tworzenia kodu aplikacji, funkcji, modułów, komponentów, serwisów czy skryptów (Profil 10).
    - Samodzielne pisanie kodu przez koordynatora zamiast delegacji do darmowego roju jest traktowane jako **BŁĄD KRYTYCZNY (Critical Protocol Violation)** i marnotrawstwo płatnych limitów subskrypcji Google AI One Pro!
-2. **OBOWIĄZKOWA DELEGACJA DO ROJU (`Free Swarm` & `Specialists`)**:
-   - **Pisanie kodu i implementacja (90% wolumenu):** ZAWSZE przekazuj do agenta `builder` (OpenCode — 100% darmowy model GLM-5.3-Flash):
+2. **OBOWIĄZKOWA DELEGACJA DO ROJU TYTANÓW (`Swarm of Titans`)**:
+   - **Pisanie kodu i implementacja (100% wolumenu):** ZAWSZE przekazuj do agenta `builder` (Codex CLI — SOTA model **`GPT-6-Luna`** z planu ChatGPT Go):
      `herdr agent prompt builder "Zaimplementuj <opis/pliki>" --wait --timeout 180000`
-   - **Badanie struktury i powiązań w repo:** ZAWSZE przekazuj do agenta `scout` (Kilo Code — 100% darmowy):
-     `herdr agent prompt scout "Zbadaj strukturę modułu <moduł>" --wait`
-   - **Architektura i trudne kontrakty:** ZAWSZE konsultuj z agentem `architect` (Codex — ChatGPT Go Plan):
-     `herdr agent prompt architect "Oceń architekturę i wskaż edge cases" --wait`
-   - **Uruchamianie testów i weryfikacja jakości:** ZAWSZE zlecaj agentowi `sentinel` (Oh-My-Pi — 100% darmowy):
+   - **Architektura, trudne kontrakty & złośliwy fuzzing:** ZAWSZE konsultuj z agentem `architect` (Codex CLI — **`GPT-6-Luna`**):
+     `herdr agent prompt architect "Oceń architekturę, kontrakty i wskaż złośliwe edge-cases" --wait`
+   - **Frontend Craft & Design Systems:** Zlecaj do instancji Antigravity (`craftsman`) ze skillami `TasteSkill 2.5` i `Impeccable` (**`Gemini 3.8 Flash High`**):
+     `herdr-swarm frontend "<temat>"`
+   - **Uruchamianie testów i weryfikacja deterministyczna:** Zlecaj agentowi `sentinel` (runner testowy):
      `herdr agent prompt sentinel "Uruchom test runner dla <moduł>" --wait`
-   - **Code Review:** ZAWSZE zlecaj agentowi `reviewer` (Antigravity):
+   - **Code Review & Audyt Bezpieczeństwa:** ZAWSZE zlecaj agentowi `reviewer` (Antigravity CLI — **`Gemini 4 Argon`** / **`Gemini 3.8 Flash High`**):
      `herdr agent prompt reviewer "Wykonaj rygorystyczny code review diffa" --wait`
    - **LUB JEDNYM POLECENIEM ZAUTOMATYZOWANYM:**
      `herdr-swarm pipeline "<opis zadania programistycznego>"`
+   - **ŻELAZNY ZAKAZ UŻYWANIA SŁABYCH MODELI 7B / DARMOWYCH BRAMEK DO PISANIA KODU.** Wyłącznie `GPT-6-Luna`, `Gemini 4 Argon` i `Gemini 3.8 Flash`.
 3. **DO CZEGO SŁUŻĄ NARZĘDZIA PLIKOWE KOORDYNATORA?**:
    - Koordynator używa `read_file` do inspekcji.
    - Koordynator używa `run_command` do wysyłania zadań do Herdr (`herdr agent prompt ...`, `herdr-swarm ...`).
@@ -136,16 +137,16 @@ Before taking any action, classify the incoming prompt using this 3-question fil
 
 ### 10. Pełna Inżynieria Oprogramowania (Heavy SWE — Herdr Orchestrated)
 - **Zakres:** Nowy moduł, refaktoryzacja bazy danych, implementacja feature'a z testami, trudne bugi integracyjne.
-- **Przebieg Pipeline'u w Herdr Swarm:**
-  1. **Architektura & Kontrakty (`coordinator` + `architect`):** Analiza struktury repozytorium przez `coordinator` (Antigravity) oraz konsultacja założeń architektonicznych przez `architect` (Codex w Tab 2):
+- **Przebieg Pipeline'u w Herdr Swarm of Titans:**
+  1. **Architektura & Kontrakty (`coordinator` + `architect`):** Analiza struktury repozytorium przez `coordinator` (Antigravity `Gemini 4 Argon` / `Gemini 3.8 Flash High`) oraz konsultacja założeń architektonicznych przez `architect` (Codex `GPT-6-Luna` w Tab 2):
      `herdr agent prompt architect "Oceń architekturę i kontrakty interfejsów dla <moduł>" --wait`
-  2. **Implementacja Kodu (Zero-Cost `builder` / `scout`):** Delegacja pisania kodu do agentów darmowego roju w Tab 1 (`builder` / OpenCode GLM-5.3-Flash Free lub `scout` / Kilo Code):
+  2. **Implementacja Kodu (SOTA `builder` / Codex GPT-6-Luna):** Delegacja pisania kodu do agenta `builder` (Codex CLI — `GPT-6-Luna` w Tab 1):
      `herdr agent prompt builder "Zaimplementuj interfejsy i moduł w <ścieżka>" --wait`
-  3. **Deterministyczna Weryfikacja & Testy (`sentinel` + lokalny runner):** Uruchomienie lokalnych testów (`pytest`, `tsc`, `cargo test`, `ruff`) oraz weryfikacja przez `sentinel` (Oh-My-Pi w Tab 2):
+  3. **Deterministyczna Weryfikacja & Testy (`sentinel` + lokalny runner):** Uruchomienie lokalnych testów (`pytest`, `tsc`, `cargo test`, `ruff`) oraz weryfikacja przez `sentinel` w Tab 2:
      `herdr agent prompt sentinel "Uruchom testy i przeanalizuj pokrycie w <moduł>" --wait`
   4. **Fuzzing & Adversarial Edge Cases (`architect` / Codex):** Generowanie złośliwych przypadków brzegowych przez Codex:
      `herdr agent prompt architect "Wygeneruj złośliwe przypadki brzegowe i scenariusze awarii dla <kod>" --wait`
-  5. **Przegląd Jakości (`reviewer` / Antigravity Gemini):** Ostateczny szlif stylistyczny, spójność i audyt bezpieczeństwa w oparciu o subskrypcję Google AI One Pro:
+  5. **Przegląd Jakości & Audyt Bezpieczeństwa (`reviewer` / Antigravity Gemini 4 Argon / 3.8 Flash):** Ostateczny rygorystyczny przegląd diffa przez tytana Google AI One Pro:
      `herdr agent prompt reviewer "Wykonaj rygorystyczny code review diffa" --wait`
   6. **Akceptacja & Commit (`coordinator`):** Ostateczny przegląd diffa w dedykowanej konsoli Coordinator (Tab 3), raport dla użytkownika i commit.
 
@@ -262,22 +263,22 @@ Przed każdą próbą wywołania `edit_file` / `write_file` na plikach źródło
    - Edycji reguł systemowych (`AGENTS.md`, `.gitignore`, `config`).
 3. Każde bezpośrednie pisanie kodu przez koordynatora w Profilu 10 stanowi **błąd krytyczny orkiestracji**.
 
-### 1. Topologia Przestrzeni Roboczej i Roster Agentów
+### 1. Topologia Przestrzeni Roboczej i Roster Tytanów
 
-Przestrzeń Herdr zorganizowana jest w 3 wyspecjalizowane zakładki:
+Przestrzeń Herdr zorganizowana jest w 3 wyspecjalizowane zakładki, w których pracują wyłącznie modele Frontier:
 
 - **Zakładka 3: `Coordinator` (`Alt+3` — Centrala Koordynacyjna)**:
-  - `coordinator` (Antigravity CLI): Dedykowany, pełnoekranowy pulpit nadrzędnej inteligencji (Triage, decyzje architektoniczne, synteza wyników, dispatch zadań, ostateczne zatwierdzanie zmian).
-- **Zakładka 1: `Free Swarm` (`Alt+1` — Rój Zerokosztowy / 100% Free Tiers)**:
-  - `builder` (OpenCode — model `glm-5.3-flash-free` via OpenCode Zen): Główny wół roboczy do masowej generacji kodu, pisania funkcji, refaktoryzacji i tworzenia plików.
-  - `scout` (Kilo Code — model `kilo-auto/free` via Kilo Gateway): Rozpoznanie struktury repozytorium, inspekcja zależności, testy alternatywnych modeli.
-  - `analyst` (Pi — model `nemotron-3.5-super-vl-120b-a12b` via OpenRouter/NIM): Błyskawiczna analiza semantyczna, walidacja składni, szybkie sprawdzanie hipotez.
-- **Zakładka 2: `Specialists` (`Alt+2` — Eksperci & Bramki Walidacyjne)**:
-  - `oracle` (Hermes Agent — provider `openrouter/free`): Złożone zapytania narzędziowe, integracje baz wiedzy, pamięć długoterminowa.
-  - `architect` (Codex CLI — model `gpt-6-luna`, effort `medium`): Dogłębna analiza architektury, wykrywanie luk logicznych, złośliwy fuzzing i testy brzegowe.
-  - `strategist` (Antigravity CLI — model `gemini-3.8-flash`): Druga, niezależna perspektywa planistyczna, asynchroniczna ewaluacja strategii.
-  - `sentinel` (Oh-My-Pi — model `nemotron-3.5-super-vl-120b-a12b`): Rygorystyczny strażnik jakości, automatyczne testy i walidacja prewalk.
-  - `reviewer` (Antigravity CLI — model `gemini-3.8-flash` / `gemini-4-argon` via Google AI One Pro): Ostateczna krytyka kodu, audyt czystości i bezpieczeństwa.
+  - `coordinator` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Dedykowany, pełnoekranowy pulpit nadrzędnej inteligencji (Triage, decyzje architektoniczne, synteza wyników, dispatch zadań, ostateczne zatwierdzanie zmian).
+- **Zakładka 1: `Core Engineering` (`Alt+1` — Główna Implementacja)**:
+  - `builder` (Codex CLI — model `GPT-6-Luna` via ChatGPT Go Plan): Główny inżynier do 100% implementacji kodu produkcyjnego, pisania funkcji, refaktoryzacji, architektury modułów i testów.
+  - `scout` (Kilo Code / Codex CLI): Szybkie rozpoznanie struktury repozytorium i indeksowanie plików.
+  - `analyst` (Pi / Antigravity CLI): Błyskawiczna analiza semantyczna, walidacja składni, szybkie sprawdzanie hipotez.
+- **Zakładka 2: `Specialists & Audyt` (`Alt+2` — Eksperci & Bramki Walidacyjne)**:
+  - `architect` (Codex CLI — model `GPT-6-Luna`, effort `medium/high`): Dogłębna analiza architektury, wykrywanie luk logicznych, złośliwy fuzzing i testy brzegowe.
+  - `reviewer` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Ostateczna, bezlitosna krytyka kodu, audyt czystości i bezpieczeństwa napisanego przez Codexa diffa.
+  - `craftsman` (Antigravity CLI — model `Gemini 3.8 Flash High`): Frontend Craft z pełnym zestawem skilli `TasteSkill 2.5` i `Impeccable` (poziom figma.com/x.ai, zakaz fioletu, 1 sekcja na ekran).
+  - `sentinel` (Oh-My-Pi / Runner): Rygorystyczny strażnik jakości, automatyczne testy deterministyczne (`pytest`, `npm test`, `cargo test`).
+  - `oracle` (Hermes Agent): Złożone zapytania narzędziowe, integracje baz wiedzy, pamięć długoterminowa.
 
 ### 2. Standard Komunikacji Między-Agentowej (Socket API Dispatch)
 
