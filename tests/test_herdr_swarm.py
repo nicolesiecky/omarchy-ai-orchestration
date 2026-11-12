@@ -255,8 +255,8 @@ class TestHerdrAgentCommunicationAndOrchestration(unittest.TestCase):
         self.sample_agents = [
             {"name": "coordinator", "agent": "antigravity", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p1", "status": "idle"},
             {"name": "builder", "agent": "codex", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p2", "status": "idle"},
+            {"name": "craftsman", "agent": "antigravity", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p9", "status": "idle"},
             {"name": "architect", "agent": "codex", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p6", "status": "idle"},
-            {"name": "sentinel", "agent": "oh-my-pi", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p8", "status": "idle"},
             {"name": "reviewer", "agent": "antigravity", "workspace_id": "w2", "tab_id": "w2", "pane_id": "p5", "status": "idle"},
             {"name": "foreign_agent", "agent": "codex", "workspace_id": "w3", "tab_id": "w3", "pane_id": "p1", "status": "idle"},
         ]
@@ -435,7 +435,7 @@ class TestHerdrAgentCommunicationAndOrchestration(unittest.TestCase):
             self.assertEqual(code, 1)
 
     def test_pipeline_happy_path(self):
-        """Pipeline runs all 4 stages in sequence, passing architect output to builder."""
+        """Pipeline runs all 3 stages in sequence, passing architect output to builder."""
         args = argparse.Namespace(task="implement auth", timeout=60)
         captured_prompts: dict[str, str] = {}
 
@@ -450,8 +450,8 @@ class TestHerdrAgentCommunicationAndOrchestration(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("architect", captured_prompts)
             self.assertIn("builder", captured_prompts)
-            self.assertIn("sentinel", captured_prompts)
             self.assertIn("reviewer", captured_prompts)
+            self.assertNotIn("sentinel", captured_prompts)
             # Verify builder received architect contracts
             self.assertIn("ARCHITECTURE CONTRACTS:\nOutput from architect", captured_prompts["builder"])
 

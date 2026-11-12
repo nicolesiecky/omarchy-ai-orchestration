@@ -314,7 +314,6 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
     stages = [
         ("architect", f"TASK: {task}\n\nOutline architectural contracts, interfaces, data types and adversarial edge cases. Return concise actionable guidance."),
         ("builder", None),
-        ("sentinel", f"Run unit tests and syntax checks for this task: {task}. Report exact pass/fail counts and failures."),
         ("reviewer", f"Perform a strict code and security review of the implementation for: {task}. Report findings and verdict."),
     ]
     outputs: dict[str, str] = {}
@@ -323,7 +322,7 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
             arch = outputs.get("architect", "").strip()
             if not arch:
                 return emit(False, "pipeline", error=CommandFailure("empty_architecture", "Architect output is required before builder stage"))
-            prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS:\n{arch}\n\nImplement the required changes and tests."
+            prompt = f"TASK: {task}\n\nARCHITECTURE CONTRACTS:\n{arch}\n\nImplement the required changes and tests, run local validations, and report results."
         print(f"[Stage {index}/{len(stages)}] {agent}", file=sys.stderr)
         try:
             outputs[agent] = prompt_and_read(agent, prompt or "", timeout)

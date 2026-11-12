@@ -30,10 +30,10 @@ Gdy środowisko działa wewnątrz terminala Herdr (`test "${HERDR_ENV:-}" = 1`):
      `herdr agent prompt builder "Zaimplementuj <opis/pliki>" --wait --timeout 180000`
    - **Architektura, trudne kontrakty & złośliwy fuzzing:** ZAWSZE konsultuj z agentem `architect` (Codex CLI — **`GPT-6-Luna`**):
      `herdr agent prompt architect "Oceń architekturę, kontrakty i wskaż złośliwe edge-cases" --wait`
-   - **Frontend Craft & Design Systems:** Zlecaj do instancji Antigravity (`craftsman`) ze skillami `TasteSkill 2.5` i `Impeccable` (**`Gemini 3.8 Flash High`**):
+   - **Frontend Craft & Design Systems:** Zlecaj do instancji Antigravity (`craftsman`) ze skillami `Stageshow`, `TasteSkill 2.5` i `Impeccable` (**`Gemini 3.8 Flash High`**):
      `herdr-swarm frontend "<temat>"`
-   - **Uruchamianie testów i weryfikacja deterministyczna:** Zlecaj agentowi `sentinel` (runner testowy):
-     `herdr agent prompt sentinel "Uruchom test runner dla <moduł>" --wait`
+   - **Deterministyczna Weryfikacja & Testy (Zero Narzutu LLM):** Testy (`pytest`, `npm test`, `cargo test`) uruchamiaj deterministycznie w bashu lub weryfikuj w `builder`:
+     `pytest -v` lub `herdr-swarm pipeline "<zadanie>"`
    - **Code Review & Audyt Bezpieczeństwa:** ZAWSZE zlecaj agentowi `reviewer` (Antigravity CLI — **`Gemini 4 Argon`** / **`Gemini 3.8 Flash High`**):
      `herdr agent prompt reviewer "Wykonaj rygorystyczny code review diffa" --wait`
    - **LUB JEDNYM POLECENIEM ZAUTOMATYZOWANYM:**
@@ -68,7 +68,7 @@ Pisanie kodu UI bez przejścia Etapu Inspiracji skutkuje generowaniem tzw. **AI-
    Dopiero po zebraniu dossier koordynator przekazuje do `builder` (OpenCode) zadanie wraz z wylosowanymi tokenami, paletą i zasadami:
    `herdr-swarm frontend "<temat>"` lub `herdr agent prompt builder "Zaimplementuj frontend wg INSPIRATION_DOSSIER.md... ZAKAZ FIOLETU..." --wait`
 4. **Etap 4: Podwójna Bramka Weryfikacji Anty-Slop:**
-   Po wygenerowaniu kodu koordynator lub sentinel URUCHAMIA:
+   Po wygenerowaniu kodu koordynator URUCHAMIA:
    - `impeccable detect --json <pliki>`
    - `taste-skill check --url <plik>`
    Jeśli wykryty zostanie jakikolwiek slop (np. `gradient-text`, `border-accent-on-rounded`, `ai-color-palette`), kod wraca do `builder` do natychmiastowej poprawy!
@@ -142,8 +142,7 @@ Before taking any action, classify the incoming prompt using this 3-question fil
      `herdr agent prompt architect "Oceń architekturę i kontrakty interfejsów dla <moduł>" --wait`
   2. **Implementacja Kodu (SOTA `builder` / Codex GPT-6-Luna):** Delegacja pisania kodu do agenta `builder` (Codex CLI — `GPT-6-Luna` w Tab 1):
      `herdr agent prompt builder "Zaimplementuj interfejsy i moduł w <ścieżka>" --wait`
-  3. **Deterministyczna Weryfikacja & Testy (`sentinel` + lokalny runner):** Uruchomienie lokalnych testów (`pytest`, `tsc`, `cargo test`, `ruff`) oraz weryfikacja przez `sentinel` w Tab 2:
-     `herdr agent prompt sentinel "Uruchom testy i przeanalizuj pokrycie w <moduł>" --wait`
+  3. **Deterministyczna Weryfikacja & Testy (Deterministyczny Test Runner):** Uruchomienie lokalnych testów (`pytest`, `tsc`, `cargo test`, `ruff`) bezpośrednio w potoku (zero narzutu i zero halucynacji LLM).
   4. **Fuzzing & Adversarial Edge Cases (`architect` / Codex):** Generowanie złośliwych przypadków brzegowych przez Codex:
      `herdr agent prompt architect "Wygeneruj złośliwe przypadki brzegowe i scenariusze awarii dla <kod>" --wait`
   5. **Przegląd Jakości & Audyt Bezpieczeństwa (`reviewer` / Antigravity Gemini 4 Argon / 3.8 Flash):** Ostateczny rygorystyczny przegląd diffa przez tytana Google AI One Pro:
@@ -288,9 +287,9 @@ Przestrzeń Herdr zorganizowana jest w 3 wyspecjalizowane zakładki, w których 
   - `builder` (Codex CLI — model `GPT-6-Luna` via ChatGPT Go Plan): Główny inżynier do 100% implementacji backendu, logiki, algorytmów, modułów i testów (Lewa kolumna, 50% szerokości, pełna wysokość).
   - `craftsman` (Antigravity CLI — model `Gemini 3.8 Flash High`): Główny inżynier Frontend Craft z pełnym zestawem skilli `Stageshow`, `TasteSkill 2.5` i `Impeccable` (Prawa kolumna, 50% szerokości, pełna wysokość).
 - **Zakładka 2: `Specialists & Audyt` (`Alt+2` — Eksperci & Bramki Walidacyjne)**:
-  - `architect` (Codex CLI — model `GPT-6-Luna`, effort `medium/high`): Głęboka analiza architektury, modelowanie kontraktów API, wykrywanie luk logicznych i złośliwy fuzzing (Prawa kolumna, 50% szerokości, pełna wysokość).
-  - `reviewer` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Ostateczny, bezlitosny Code Review i audyt bezpieczeństwa (Lewa kolumna góra, 25 wierszy).
-  - `sentinel` (Oh-My-Pi / Terminal Runner): Rygorystyczny strażnik jakości, automatyczne testy deterministyczne (`pytest`, `npm test`, bramka `stageshow film --gate`) (Lewa kolumna dół, 24 wiersze).
+  - `architect` (Codex CLI — model `GPT-6-Luna`, effort `medium/high`): Głęboka analiza architektury, modelowanie kontraktów API, wykrywanie luk logicznych i złośliwy fuzzing (Prawa kolumna, 50% szerokości, pełna wysokość 49 wierszy).
+  - `reviewer` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Ostateczny, bezlitosny Code Review i audyt bezpieczeństwa (Lewa kolumna, 50% szerokości, pełna wysokość 49 wierszy).
+  *(Perfekcyjny, symetryczny split 50/50 na pełną wysokość bez zbędnych procesów i słabych modeli)*.
 
 ### 2. Standard Komunikacji Między-Agentowej (Socket API Dispatch)
 
@@ -337,12 +336,11 @@ Do uruchamiania wieloetapowych zadań inżynieryjnych używaj wbudowanego potoku
 ```bash
 herdr-swarm pipeline "<opis zadania inżynieryjnego>"
 ```
-Przebieg 4-etapowego potoku:
+Przebieg potoku inżynieryjnego:
 1. **Etap 1: Architektura (`architect` / Codex GPT-6-Luna):** Formułowanie sygnatur funkcji, interfejsów, kontraktów i przypadków brzegowych.
-2. **Etap 2: Implementacja (`builder` / OpenCode GLM-5.3-Flash Free):** Pisanie plików, modułów i implementacji na bazie wytycznych architekta.
-3. **Etap 3: Weryfikacja & Bramka Jakości (`sentinel` / Oh-My-Pi Nemotron):** Uruchomienie lokalnego runnera testów (`pytest`, `cargo test`, `npm test`) i sprawdzenie pokrycia.
-4. **Etap 4: Code Review & Bezpieczeństwo (`reviewer` / Antigravity Gemini):** Rygorystyczny audyt diffa pod kątem czystości, regresji i bezpieczeństwa.
-5. **Synteza & Commit (`coordinator`):** Ostateczna akceptacja diffa i zatwierdzenie w gicie.
+2. **Etap 2: Implementacja & Testy (`builder` / Codex GPT-6-Luna):** Pisanie modułów, implementacja logiki, testów jednostkowych i lokalna walidacja.
+3. **Etap 3: Code Review & Bezpieczeństwo (`reviewer` / Antigravity Gemini 4 Argon / 3.8 Flash):** Rygorystyczny audyt diffa pod kątem czystości, regresji i bezpieczeństwa.
+4. **Synteza, Deterministyczna Weryfikacja & Commit (`coordinator`):** Deterministyczne uruchomienie testów runnerem, raport i zatwierdzenie w gicie.
 
 ### 5. Izolacja Równoległa Git Worktree (`herdr worktree`)
 
