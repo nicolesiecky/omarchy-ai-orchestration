@@ -395,7 +395,7 @@ class TestHerdrAgentCommunicationAndOrchestration(unittest.TestCase):
                 self.assertIn("Zoomed pane w2:p2", stream.getvalue())
 
     def test_cmd_broadcast_success(self):
-        """cmd_broadcast sends message to default agent group (builder, scout, analyst)."""
+        """cmd_broadcast sends message to default agent group (builder, craftsman, architect)."""
         args = argparse.Namespace(text="Update guidelines", timeout=30)
         mock_proc = MagicMock(returncode=0, stdout="ok")
         with patch.object(self.mod, "bounded_run", return_value=mock_proc):
@@ -406,10 +406,10 @@ class TestHerdrAgentCommunicationAndOrchestration(unittest.TestCase):
     def test_cmd_broadcast_partial_failure(self):
         """cmd_broadcast reports partial_failure if one agent fails."""
         args = argparse.Namespace(text="Update guidelines", timeout=30)
-        # builder ok, scout fails, analyst ok
+        # builder ok, craftsman fails, architect ok
         side_effects = [
             MagicMock(returncode=0, stdout="ok"),
-            MagicMock(returncode=1, stdout="", stderr="scout busy"),
+            MagicMock(returncode=1, stdout="", stderr="craftsman busy"),
             MagicMock(returncode=0, stdout="ok")
         ]
         with patch.object(self.mod, "bounded_run", side_effect=side_effects):

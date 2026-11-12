@@ -50,19 +50,16 @@ flowchart TD
 
 ```
 Tab 3: [Coordinator] (Alt+3) ◀ CENTRALNY PULPIT
-└── coordinator (Antigravity CLI) — Model: Gemini 4 Argon / Gemini 3.8 Flash High (Nadzór, triage, architektura, merge)
+└── coordinator (Antigravity CLI) — Model: Gemini 4 Argon / Gemini 3.8 Flash High (Nadzór, triage, architektura, merge) [Pełny ekran]
 
 Tab 1: [Core Engineering] (Alt+1) — GŁÓWNA IMPLEMENTACJA (FRONTIER SWE)
-├── builder   (Codex CLI)  — Model: GPT-6-Luna (Główny inżynier / 100% implementacji kodu)
-├── scout     (Kilo Code)  — Recon struktury repozytorium i indeksowanie
-└── analyst   (Pi)         — Szybka analiza semantyczna i walidacja
+├── builder   (Codex CLI)       — Model: GPT-6-Luna (Główny inżynier / 100% implementacji backendu i logiki) [Lewa połowa, 49 wierszy]
+└── craftsman (Antigravity CLI) — Model: Gemini 3.8 Flash High (Frontend Craft, Stageshow, TasteSkill 2.5) [Prawa połowa, 49 wierszy]
 
-Tab 2: [Specialists & Audyt] (Alt+2) — EKSPERCI, DESIGN & BRAMKI KONTROLNE
-├── architect  (Codex CLI)      — Model: GPT-6-Luna (Fuzzing, edge-cases i kontrakty architektoniczne)
-├── reviewer   (Antigravity CLI)— Model: Gemini 4 Argon / Gemini 3.8 Flash High (Rygorystyczny Code Review)
-├── strategist (Antigravity CLI)— Model: Gemini 3.8 Flash High (Strategia i asynchroniczne planowanie)
-├── sentinel   (Oh-My-Pi)       — Automatyczne testy deterministyczne (pytest, npm test)
-└── oracle     (Hermes)         — Głębokie narzędzia i pamięć długoterminowa
+Tab 2: [Specialists & Audyt] (Alt+2) — EKSPERCI, ARCHITEKTURA & BRAMKI KONTROLNE
+├── architect (Codex CLI)       — Model: GPT-6-Luna (Architektura, edge-cases i kontrakty API) [Prawa połowa, 49 wierszy]
+├── reviewer  (Antigravity CLI) — Model: Gemini 4 Argon / Gemini 3.8 Flash High (Rygorystyczny Code Review) [Lewa góra, 25 wierszy]
+└── sentinel  (Oh-My-Pi Runner) — Automatyczne testy deterministyczne (pytest, npm test, Stageshow gate) [Lewa dół, 24 wiersze]
 ```
 
 ### 📡 Standard Komunikacji Socketowej (`herdr-swarm`)

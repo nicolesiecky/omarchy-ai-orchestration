@@ -270,7 +270,7 @@ def cmd_zoom(args: argparse.Namespace) -> int:
 
 
 def cmd_broadcast(args: argparse.Namespace) -> int:
-    agents = ["builder", "scout", "analyst"]
+    agents = ["builder", "craftsman", "architect"]
     failures: list[dict[str, Any]] = []
     delivered: list[str] = []
     for agent in agents:

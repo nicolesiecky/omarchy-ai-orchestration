@@ -285,15 +285,12 @@ Przestrzeń Herdr zorganizowana jest w 3 wyspecjalizowane zakładki, w których 
 - **Zakładka 3: `Coordinator` (`Alt+3` — Centrala Koordynacyjna)**:
   - `coordinator` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Dedykowany, pełnoekranowy pulpit nadrzędnej inteligencji (Triage, decyzje architektoniczne, synteza wyników, dispatch zadań, ostateczne zatwierdzanie zmian).
 - **Zakładka 1: `Core Engineering` (`Alt+1` — Główna Implementacja)**:
-  - `builder` (Codex CLI — model `GPT-6-Luna` via ChatGPT Go Plan): Główny inżynier do 100% implementacji kodu produkcyjnego, pisania funkcji, refaktoryzacji, architektury modułów i testów.
-  - `scout` (Kilo Code / Codex CLI): Szybkie rozpoznanie struktury repozytorium i indeksowanie plików.
-  - `analyst` (Pi / Antigravity CLI): Błyskawiczna analiza semantyczna, walidacja składni, szybkie sprawdzanie hipotez.
+  - `builder` (Codex CLI — model `GPT-6-Luna` via ChatGPT Go Plan): Główny inżynier do 100% implementacji backendu, logiki, algorytmów, modułów i testów (Lewa kolumna, 50% szerokości, pełna wysokość).
+  - `craftsman` (Antigravity CLI — model `Gemini 3.8 Flash High`): Główny inżynier Frontend Craft z pełnym zestawem skilli `Stageshow`, `TasteSkill 2.5` i `Impeccable` (Prawa kolumna, 50% szerokości, pełna wysokość).
 - **Zakładka 2: `Specialists & Audyt` (`Alt+2` — Eksperci & Bramki Walidacyjne)**:
-  - `architect` (Codex CLI — model `GPT-6-Luna`, effort `medium/high`): Dogłębna analiza architektury, wykrywanie luk logicznych, złośliwy fuzzing i testy brzegowe.
-  - `reviewer` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Ostateczna, bezlitosna krytyka kodu, audyt czystości i bezpieczeństwa napisanego przez Codexa diffa.
-  - `craftsman` (Antigravity CLI — model `Gemini 3.8 Flash High`): Frontend Craft z pełnym zestawem skilli `TasteSkill 2.5` i `Impeccable` (poziom figma.com/x.ai, zakaz fioletu, 1 sekcja na ekran).
-  - `sentinel` (Oh-My-Pi / Runner): Rygorystyczny strażnik jakości, automatyczne testy deterministyczne (`pytest`, `npm test`, `cargo test`).
-  - `oracle` (Hermes Agent): Złożone zapytania narzędziowe, integracje baz wiedzy, pamięć długoterminowa.
+  - `architect` (Codex CLI — model `GPT-6-Luna`, effort `medium/high`): Głęboka analiza architektury, modelowanie kontraktów API, wykrywanie luk logicznych i złośliwy fuzzing (Prawa kolumna, 50% szerokości, pełna wysokość).
+  - `reviewer` (Antigravity CLI — model `Gemini 4 Argon` / `Gemini 3.8 Flash High` via Google AI One Pro): Ostateczny, bezlitosny Code Review i audyt bezpieczeństwa (Lewa kolumna góra, 25 wierszy).
+  - `sentinel` (Oh-My-Pi / Terminal Runner): Rygorystyczny strażnik jakości, automatyczne testy deterministyczne (`pytest`, `npm test`, bramka `stageshow film --gate`) (Lewa kolumna dół, 24 wiersze).
 
 ### 2. Standard Komunikacji Między-Agentowej (Socket API Dispatch)
 
